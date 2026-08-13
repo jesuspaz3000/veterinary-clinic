@@ -505,6 +505,38 @@ Ref: medical_record.id < vaccination_record.medical_record_id [delete: set null]
 Ref: products.id < vaccination_record.product_id [delete: restrict]
 
 ////////////////////////////////////////////////////
+// MÓDULO: DESPARASITACIONES
+////////////////////////////////////////////////////
+
+Table deworming_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID
+  product_id UUID [not null]  // ref al producto en inventario
+  product_name string [not null] // snapshot
+  product_brand string
+  dosage string [not null]
+  application_date date [not null]
+  next_application_date date
+  veterinarian_id UUID [not null]
+  deworming_type string [not null] // interna, externa, ambas
+  observations text
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    application_date
+    next_application_date
+  }
+}
+
+Ref: pets.id < deworming_record.pet_id [delete: cascade]
+Ref: veterinarian.id < deworming_record.veterinarian_id [delete: restrict]
+Ref: medical_record.id < deworming_record.medical_record_id [delete: set null]
+Ref: products.id < deworming_record.product_id [delete: restrict]
+
+////////////////////////////////////////////////////
 // MÓDULO: FACTURACIÓN Y VENTAS (POS)
 ////////////////////////////////////////////////////
 
@@ -636,37 +668,6 @@ Table pet_photo {
 }
 
 Ref: pets.id < pet_photo.pet_id [delete: cascade]
-
-////////////////////////////////////////////////////
-// [PLANEADO] MÓDULO: DESPARASITACIONES
-////////////////////////////////////////////////////
-
-Table deworming_record {
-  id UUID [primary key]
-  pet_id UUID [not null]
-  medical_record_id UUID
-  product_id UUID [not null]  // ref al producto en inventario
-  product_name string [not null] // snapshot
-  product_brand string
-  dosage string [not null]
-  application_date date [not null]
-  next_application_date date
-  veterinarian_id UUID [not null]
-  deworming_type string [not null] // interna, externa, ambas
-  observations text
-  created_at timestamp [not null]
-
-  indexes {
-    pet_id
-    application_date
-    next_application_date
-  }
-}
-
-Ref: pets.id < deworming_record.pet_id [delete: cascade]
-Ref: veterinarian.id < deworming_record.veterinarian_id [delete: restrict]
-Ref: medical_record.id < deworming_record.medical_record_id [delete: set null]
-Ref: products.id < deworming_record.product_id [delete: restrict]
 
 ////////////////////////////////////////////////////
 // [PLANEADO] MÓDULO: CIRUGÍAS

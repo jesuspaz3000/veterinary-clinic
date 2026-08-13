@@ -203,7 +203,8 @@ public class RoleServiceImpl implements RoleService{
                 "APPOINTMENTS_READ", "APPOINTMENTS_UPDATE",
                 "SCHEDULES_READ",
                 "MEDICAL_RECORDS_CREATE", "MEDICAL_RECORDS_READ", "MEDICAL_RECORDS_UPDATE",
-                "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE"
+                "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE",
+                "DEWORMING_CREATE", "DEWORMING_READ", "DEWORMING_UPDATE"
         ));
         defaultRolePermissions.put(RoleNames.ADMIN, List.of(
                 "USERS_CREATE", "USERS_READ", "USERS_UPDATE", "USERS_DELETE",
@@ -216,7 +217,8 @@ public class RoleServiceImpl implements RoleService{
                 "APPOINTMENTS_CREATE", "APPOINTMENTS_READ", "APPOINTMENTS_UPDATE", "APPOINTMENTS_DELETE",
                 "SCHEDULES_CREATE", "SCHEDULES_READ", "SCHEDULES_UPDATE", "SCHEDULES_DELETE",
                 "MEDICAL_RECORDS_CREATE", "MEDICAL_RECORDS_READ", "MEDICAL_RECORDS_UPDATE", "MEDICAL_RECORDS_DELETE",
-                "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE", "VACCINATIONS_DELETE"
+                "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE", "VACCINATIONS_DELETE",
+                "DEWORMING_CREATE", "DEWORMING_READ", "DEWORMING_UPDATE", "DEWORMING_DELETE"
         ));
         defaultRolePermissions.put(RoleNames.GROOMING, List.of(
                 "GROOMING_READ", "OWNERS_READ", "PETS_READ",
@@ -227,7 +229,8 @@ public class RoleServiceImpl implements RoleService{
                 "APPOINTMENTS_CREATE", "APPOINTMENTS_READ", "APPOINTMENTS_UPDATE", "APPOINTMENTS_DELETE",
                 "SCHEDULES_CREATE", "SCHEDULES_READ", "SCHEDULES_UPDATE", "SCHEDULES_DELETE",
                 "MEDICAL_RECORDS_READ",
-                "VACCINATIONS_READ"
+                "VACCINATIONS_READ",
+                "DEWORMING_READ"
         ));
 
         for (Map.Entry<String, List<String>> entry : defaultRolePermissions.entrySet()) {
@@ -281,6 +284,7 @@ public class RoleServiceImpl implements RoleService{
         moduleActions.put("SCHEDULES", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("MEDICAL_RECORDS", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("VACCINATIONS", List.of("CREATE", "READ", "UPDATE", "DELETE"));
+        moduleActions.put("DEWORMING", List.of("CREATE", "READ", "UPDATE", "DELETE"));
 
         Set<String> existingNames = new HashSet<>();
         permissionRepository.findAll().forEach(p -> existingNames.add(p.getName()));
@@ -375,6 +379,11 @@ public class RoleServiceImpl implements RoleService{
             case "VACCINATIONS_READ" -> "Ver vacunaciones";
             case "VACCINATIONS_UPDATE" -> "Actualizar vacunaciones";
             case "VACCINATIONS_DELETE" -> "Eliminar vacunaciones";
+
+            case "DEWORMING_CREATE" -> "Registrar desparasitaciones";
+            case "DEWORMING_READ" -> "Ver desparasitaciones";
+            case "DEWORMING_UPDATE" -> "Actualizar desparasitaciones";
+            case "DEWORMING_DELETE" -> "Eliminar desparasitaciones";
 
             default -> module + " " + action;
         };

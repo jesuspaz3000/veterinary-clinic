@@ -79,6 +79,12 @@ export const PERMISSIONS = {
         READ: "VACCINATIONS_READ",
         UPDATE: "VACCINATIONS_UPDATE",
         DELETE: "VACCINATIONS_DELETE"
+    },
+    DEWORMING: {
+        CREATE: "DEWORMING_CREATE",
+        READ: "DEWORMING_READ",
+        UPDATE: "DEWORMING_UPDATE",
+        DELETE: "DEWORMING_DELETE"
     }
 } as const;
 
