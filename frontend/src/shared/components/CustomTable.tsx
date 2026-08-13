@@ -139,10 +139,9 @@ export default function CustomTable<T>({
                 width: "100%",
                 overflow: "hidden",
                 position: "relative",
-                borderRadius: "16px",
+                borderRadius: "8px",
                 border: "1px solid",
-                borderColor: (theme) =>
-                    theme.palette.mode === "light" ? "rgba(26, 153, 153, 0.2)" : "divider",
+                borderColor: "divider",
                 bgcolor: "background.paper",
                 backdropFilter: "blur(8px)",
                 boxShadow: (theme) =>
@@ -167,8 +166,8 @@ export default function CustomTable<T>({
                         left: 0,
                         right: 0,
                         height: "3px",
-                        borderTopLeftRadius: "16px",
-                        borderTopRightRadius: "16px",
+                        borderTopLeftRadius: "8px",
+                        borderTopRightRadius: "8px",
                         zIndex: 10,
                     }}
                 />

@@ -121,10 +121,9 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
     <Paper
       elevation={0}
       sx={{
-        borderRadius: "16px",
+        borderRadius: "8px",
         border: "1px solid",
-        borderColor: (theme) =>
-          theme.palette.mode === "light" ? "rgba(26, 153, 153, 0.2)" : "divider",
+        borderColor: "divider",
         bgcolor: "background.paper",
         overflow: "hidden",
         boxShadow: (theme) =>
