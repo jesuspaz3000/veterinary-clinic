@@ -15,6 +15,7 @@ import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
 import MedicalInformationRoundedIcon from "@mui/icons-material/MedicalInformationRounded";
 import VaccinesRoundedIcon from "@mui/icons-material/VaccinesRounded";
 import PestControlRoundedIcon from "@mui/icons-material/PestControlRounded";
+import HealingRoundedIcon from "@mui/icons-material/HealingRounded";
 
 export interface NavItem {
     label: string;
@@ -82,6 +83,12 @@ export const navItems: NavItem[] = [
         href: "/deworming",
         icon: PestControlRoundedIcon,
         permission: PERMISSIONS.DEWORMING.READ,
+    },
+    {
+        label: "Cirugías",
+        href: "/surgeries",
+        icon: HealingRoundedIcon,
+        permission: PERMISSIONS.SURGERIES.READ,
     },
     {
         label: "Roles y permisos",

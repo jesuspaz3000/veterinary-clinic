@@ -537,6 +537,40 @@ Ref: medical_record.id < deworming_record.medical_record_id [delete: set null]
 Ref: products.id < deworming_record.product_id [delete: restrict]
 
 ////////////////////////////////////////////////////
+// MÓDULO: CIRUGÍAS
+////////////////////////////////////////////////////
+
+Table surgery_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID [not null]
+  surgery_type string [not null]       // esterilizacion, trauma, tumor
+  surgery_date timestamp [not null]
+  veterinarian_id UUID [not null]   // cirujano principal
+  assistant_veterinarian_id UUID    // asistente
+  anesthesia_type string
+  duration_minutes integer
+  pre_surgery_notes text
+  surgery_notes text
+  post_surgery_notes text
+  complications text
+  status string [default: 'programada'] // programada, en_proceso, completada, cancelada
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    surgery_date
+    veterinarian_id
+  }
+}
+
+Ref: pets.id < surgery_record.pet_id [delete: cascade]
+Ref: medical_record.id < surgery_record.medical_record_id [delete: cascade]
+Ref: veterinarian.id < surgery_record.veterinarian_id [delete: restrict]
+Ref: veterinarian.id < surgery_record.assistant_veterinarian_id [delete: set null]
+
+////////////////////////////////////////////////////
 // MÓDULO: FACTURACIÓN Y VENTAS (POS)
 ////////////////////////////////////////////////////
 
@@ -668,40 +702,6 @@ Table pet_photo {
 }
 
 Ref: pets.id < pet_photo.pet_id [delete: cascade]
-
-////////////////////////////////////////////////////
-// [PLANEADO] MÓDULO: CIRUGÍAS
-////////////////////////////////////////////////////
-
-Table surgery_record {
-  id UUID [primary key]
-  pet_id UUID [not null]
-  medical_record_id UUID [not null]
-  surgery_type string [not null]       // esterilizacion, trauma, tumor
-  surgery_date timestamp [not null]
-  veterinarian_id UUID [not null]   // cirujano principal
-  assistant_veterinarian_id UUID    // asistente
-  anesthesia_type string
-  duration_minutes integer
-  pre_surgery_notes text
-  surgery_notes text
-  post_surgery_notes text
-  complications text
-  status string [default: 'programada'] // programada, en_proceso, completada, cancelada
-  created_at timestamp [not null]
-  updated_at timestamp
-
-  indexes {
-    pet_id
-    surgery_date
-    veterinarian_id
-  }
-}
-
-Ref: pets.id < surgery_record.pet_id [delete: cascade]
-Ref: medical_record.id < surgery_record.medical_record_id [delete: cascade]
-Ref: veterinarian.id < surgery_record.veterinarian_id [delete: restrict]
-Ref: veterinarian.id < surgery_record.assistant_veterinarian_id [delete: set null]
 
 ////////////////////////////////////////////////////
 // [PLANEADO] MÓDULO: HOSPITALIZACIÓN
