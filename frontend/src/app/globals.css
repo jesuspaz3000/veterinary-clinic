@@ -1,0 +1,52 @@
+@layer theme, base, mui, components, utilities;
+@import "tailwindcss";
+
+/* Scrollbar fina y tematizada para los selectores de hora de MUI X
+   (DigitalClock / MultiSectionDigitalClock), que por defecto muestran
+   la scrollbar nativa del navegador y chocan con el tema oscuro. */
+.MuiDigitalClock-root,
+.MuiMultiSectionDigitalClockSection-root {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 191, 191, 0.45) transparent;
+}
+
+.MuiDigitalClock-root::-webkit-scrollbar,
+.MuiMultiSectionDigitalClockSection-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.MuiDigitalClock-root::-webkit-scrollbar-track,
+.MuiMultiSectionDigitalClockSection-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MuiDigitalClock-root::-webkit-scrollbar-thumb,
+.MuiMultiSectionDigitalClockSection-root::-webkit-scrollbar-thumb {
+  background: rgba(42, 191, 191, 0.45);
+  border-radius: 3px;
+}
+
+/* Scrollbar fina y tematizada para los dialogs: el contenedor que desplaza
+   es el paper del Dialog (overflow-y: auto por defecto en MUI), que de lo
+   contrario muestra la scrollbar nativa del navegador y choca con el tema. */
+.MuiDialog-paper,
+.MuiDialogContent-root {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 191, 191, 0.45) transparent;
+}
+
+.MuiDialog-paper::-webkit-scrollbar,
+.MuiDialogContent-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.MuiDialog-paper::-webkit-scrollbar-track,
+.MuiDialogContent-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MuiDialog-paper::-webkit-scrollbar-thumb,
+.MuiDialogContent-root::-webkit-scrollbar-thumb {
+  background: rgba(42, 191, 191, 0.45);
+  border-radius: 3px;
+}

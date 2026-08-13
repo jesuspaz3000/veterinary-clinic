@@ -1,0 +1,761 @@
+////////////////////////////////////////////////////
+// VetGest - Esquema de Base de Datos
+// - Secciones sin marcar: implementadas en el backend
+// - Secciones marcadas con [PLANEADO]: diseñadas, pendientes de implementar
+// Última verificación contra backend: 2026-08-12
+////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////
+// TABLAS BASE DE USUARIOS
+////////////////////////////////////////////////////
+
+Table users {
+  id UUID [primary key]
+  username string [not null]
+  first_name string
+  last_name string
+  email string [unique, not null]
+  phone string
+  password string [not null]
+  role_id UUID [not null]
+  avatar_url string
+  is_active boolean [not null, default: true]
+  token_version bigint [not null, default: 0] // Se incrementa al resetear la contraseña para invalidar JWTs previos
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Ref: roles.id < users.role_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// ROLES Y PERMISOS
+////////////////////////////////////////////////////
+
+Table roles {
+  id UUID [primary key]
+  name string [unique, not null] // SUPERADMIN, VETERINARIAN, ADMIN, GROOMING, ADMINISTRATIVE
+  description string [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table permissions {
+  id UUID [primary key]
+  name string [unique, not null] // "USERS_CREATE"
+  module string [not null]       // "USERS"
+  action string [not null]       // "CREATE"
+  description string
+  label_es string [not null]
+  description_es string
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table role_permissions {
+  role_id UUID [not null]
+  permission_id UUID [not null]
+
+  indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+Ref: roles.id < role_permissions.role_id [delete: cascade]
+Ref: permissions.id < role_permissions.permission_id [delete: cascade]
+
+////////////////////////////////////////////////////
+// PERFILES POR ROL (1:1 con users)
+////////////////////////////////////////////////////
+
+Table veterinarian {
+  id UUID [primary key]
+  user_id UUID [unique, not null]
+  license_number string [unique]
+  hire_date date
+  status string [default: 'activo'] // activo, inactivo, licencia
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Ref: users.id - veterinarian.user_id [delete: cascade]
+
+Table specialties {
+  id UUID [primary key]
+  name string [unique, not null]
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table veterinarian_specialties {
+  veterinarian_id UUID [not null]
+  specialty_id UUID [not null]
+
+  indexes {
+    (veterinarian_id, specialty_id) [pk]
+  }
+}
+
+Ref: veterinarian.id < veterinarian_specialties.veterinarian_id [delete: cascade]
+Ref: specialties.id < veterinarian_specialties.specialty_id [delete: restrict]
+
+Table grooming_staff {
+  id UUID [primary key]
+  user_id UUID [unique, not null]
+  experience_years integer
+  hire_date date
+  status string [default: 'activo'] // activo, inactivo
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Ref: users.id - grooming_staff.user_id [delete: cascade]
+
+Table grooming_specialties {
+  id UUID [primary key]
+  name string [unique, not null]
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table grooming_staff_specialties {
+  grooming_staff_id UUID [not null]
+  specialty_id UUID [not null]
+
+  indexes {
+    (grooming_staff_id, specialty_id) [pk]
+  }
+}
+
+Ref: grooming_staff.id < grooming_staff_specialties.grooming_staff_id [delete: cascade]
+Ref: grooming_specialties.id < grooming_staff_specialties.specialty_id [delete: restrict]
+
+Table administrative_staff {
+  id UUID [primary key]
+  user_id UUID [unique, not null]
+  area_id UUID
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Ref: users.id - administrative_staff.user_id [delete: cascade]
+
+Table administrative_areas {
+  id UUID [primary key]
+  name string [unique, not null]
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Ref: administrative_areas.id < administrative_staff.area_id [delete: set null]
+
+Table administrative_positions {
+  id UUID [primary key]
+  name string [unique, not null]
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+Table administrative_staff_positions {
+  administrative_staff_id UUID [not null]
+  position_id UUID [not null]
+
+  indexes {
+    (administrative_staff_id, position_id) [pk]
+  }
+}
+
+Ref: administrative_staff.id < administrative_staff_positions.administrative_staff_id [delete: cascade]
+Ref: administrative_positions.id < administrative_staff_positions.position_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// MÓDULO: HORARIOS
+////////////////////////////////////////////////////
+
+Table veterinarian_schedule {
+  id UUID [primary key]
+  veterinarian_id UUID [not null]
+  day_of_week integer [not null] // 0=Domingo ... 6=Sábado
+  start_time time [not null]
+  end_time time [not null]
+  is_available boolean [default: true]
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    (veterinarian_id, day_of_week) [unique]
+  }
+}
+
+Ref: veterinarian.id < veterinarian_schedule.veterinarian_id [delete: cascade]
+
+Table grooming_schedule {
+  id UUID [primary key]
+  grooming_staff_id UUID [not null]
+  day_of_week integer [not null]
+  start_time time [not null]
+  end_time time [not null]
+  is_available boolean [default: true]
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    (grooming_staff_id, day_of_week) [unique]
+  }
+}
+
+Ref: grooming_staff.id < grooming_schedule.grooming_staff_id [delete: cascade]
+
+////////////////////////////////////////////////////
+// MÓDULO: CLIENTES (OWNERS)
+////////////////////////////////////////////////////
+
+Table owners {
+  id UUID [primary key]
+  first_name string [not null]
+  last_name string [not null]
+  document_type string // DNI, CE, PASAPORTE
+  document_number string [unique]
+  phone string [not null]
+  email string
+  address string
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+}
+
+////////////////////////////////////////////////////
+// MÓDULO: INVENTARIO / PRODUCTOS Y FARMACIA VETERINARIA
+////////////////////////////////////////////////////
+
+Table categories {
+  id UUID [primary key]
+  name string [unique, not null]  // Medicamentos, Vacunas, Alimentos, Accesorios, Higiene
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Table brands {
+  id UUID [primary key]
+  name string [unique, not null]  // Royal Canin, Zoetis, Bravecto, Bayer, etc.
+  description string
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Table products {
+  id UUID [primary key]
+  category_id UUID [not null]
+  brand_id UUID
+  name string [not null]                // Nombre comercial ej. "Meloxivet 0.5mg"
+  active_ingredient string               // Principio activo ej. "Meloxicam"
+  target_species string                  // Especie: Perro, Gato, Aves, Todas
+  description text
+  requires_prescription boolean [not null, default: false] // Medicamento controlado
+  allows_fractioning boolean [not null, default: false]    // Venta por pastilla / mL
+  image_url string
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    category_id
+    brand_id
+    active_ingredient
+  }
+}
+
+Ref: categories.id < products.category_id [delete: restrict]
+Ref: brands.id < products.brand_id [delete: set null]
+
+Table product_variants {
+  id UUID [primary key]
+  product_id UUID [not null]
+  sku string [unique]
+  barcode string [unique]
+  name string [not null]                // Presentación ej. "3 kg", "5-10 kg", "Frasco 100 ml"
+  sale_price decimal(10,2) [not null]
+  cost_price decimal(10,2) [not null]
+  stock integer [not null, default: 0]
+  min_stock integer [default: 5]        // Alerta de reabastecimiento
+  unit_measure string [not null]        // kg, ml, tabletas, frasco, unidad
+  weight_or_volume decimal(10,2)
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    product_id
+    sku
+    barcode
+  }
+}
+
+Ref: products.id < product_variants.product_id [delete: cascade]
+
+Table inventory_lots {
+  id UUID [primary key]
+  variant_id UUID [not null]
+  lot_number string [not null]
+  expiration_date date [not null]
+  quantity integer [not null, default: 0]
+  cost_price decimal(10,2)
+  status string [default: 'disponible'] // disponible, vencido, agotado
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    variant_id
+    expiration_date
+    lot_number
+  }
+}
+
+Ref: product_variants.id < inventory_lots.variant_id [delete: cascade]
+
+Table inventory_movements {
+  id UUID [primary key]
+  variant_id UUID [not null]
+  lot_id UUID // Nulo si es ajuste global de variante
+  movement_type string [not null] // venta, ajuste_ingreso, ajuste_salida, merma_vencimiento, devolucion
+  quantity decimal(10,3) [not null] // Positivo para entrada, negativo para salida
+  previous_stock decimal(10,3) [not null]
+  new_stock decimal(10,3) [not null]
+  reference_type string // invoice, prescription, credit_note, product_adjustment, manual_adjustment
+  reference_id UUID // ID del comprobante o documento de origen
+  notes text
+  user_id UUID [not null] // Usuario/Personal que realizó la operación
+  created_at timestamp [not null]
+
+  indexes {
+    variant_id
+    lot_id
+    movement_type
+    created_at
+  }
+}
+
+Ref: product_variants.id < inventory_movements.variant_id [delete: restrict]
+Ref: inventory_lots.id < inventory_movements.lot_id [delete: set null]
+Ref: users.id < inventory_movements.user_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// MÓDULO: MASCOTAS
+////////////////////////////////////////////////////
+
+Table pets {
+  id UUID [primary key]
+  owner_id UUID [not null]
+  name string [not null]
+  species string [not null]     // Perro, Gato, Ave, Roedor, Exótico
+  breed string
+  color string
+  sex string [not null]         // Macho, Hembra
+  birth_date date               // edad se calcula en runtime desde aquí
+  weight decimal(5,2)
+  microchip_number string [unique]
+  sterilized boolean [not null, default: false]
+  photo_url string
+  status string [not null, default: 'activo'] // activo, inactivo, fallecido
+  special_notes string
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+
+  indexes {
+    owner_id
+    microchip_number
+    species
+  }
+}
+
+Ref: owners.id < pets.owner_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// MÓDULO: CITAS
+////////////////////////////////////////////////////
+
+Table appointments {
+  id UUID [primary key]
+  veterinarian_id UUID // Profesional clínico (excluyente con grooming_staff_id)
+  grooming_staff_id UUID // Profesional de peluquería (excluyente con veterinarian_id)
+  pet_id UUID [not null]     // owner se obtiene via pet.owner_id
+  date date [not null]
+  start_time time [not null]
+  end_time time [not null]
+  service_type string [not null]
+  status string [not null, default: 'pendiente'] // pendiente, confirmada, completada, cancelada
+  notes text
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    veterinarian_id
+    grooming_staff_id
+    date
+    status
+  }
+}
+
+Ref: veterinarian.id < appointments.veterinarian_id [delete: set null]
+Ref: grooming_staff.id < appointments.grooming_staff_id [delete: set null]
+Ref: pets.id < appointments.pet_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// MÓDULO: HISTORIAL MÉDICO
+////////////////////////////////////////////////////
+
+Table medical_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  veterinarian_id UUID [not null]
+  appointment_id UUID
+  record_type string [not null] // consulta, cirugia, vacunacion, desparasitacion, emergencia, hospitalizacion
+  record_date timestamp [not null]
+  reason string
+  symptoms text
+  diagnosis text
+  treatment text
+  observations text
+  weight decimal(5,2)           // peso registrado en la consulta
+  temperature decimal(4,2)      // °C
+  heart_rate integer
+  respiratory_rate integer
+  follow_up_date date
+  status string [default: 'completado'] // completado, pendiente_seguimiento
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    veterinarian_id
+    record_date
+    record_type
+  }
+}
+
+Ref: pets.id < medical_record.pet_id [delete: cascade]
+Ref: veterinarian.id < medical_record.veterinarian_id [delete: restrict]
+Ref: appointments.id < medical_record.appointment_id [delete: set null]
+
+// Prescripciones — referencia a product para control de inventario
+Table prescription {
+  id UUID [primary key]
+  medical_record_id UUID [not null]
+  product_id UUID [not null]
+  medication_name string [not null] // snapshot del nombre por si el producto cambia
+  dosage string [not null]          // "10mg"
+  frequency string [not null]       // "cada 12 horas"
+  duration_days integer [not null]  // número de días
+  instructions text
+  created_at timestamp [not null]
+}
+
+Ref: medical_record.id < prescription.medical_record_id [delete: cascade]
+Ref: products.id < prescription.product_id [delete: restrict]
+
+// Documentos adjuntos al historial
+Table medical_document {
+  id UUID [primary key]
+  medical_record_id UUID [not null]
+  document_type string [not null] // radiografia, examen_sangre, ecografia, receta
+  document_url string [not null]
+  file_name string [not null]
+  description string
+  uploaded_at timestamp [not null]
+}
+
+Ref: medical_record.id < medical_document.medical_record_id [delete: cascade]
+
+////////////////////////////////////////////////////
+// MÓDULO: VACUNACIONES
+////////////////////////////////////////////////////
+
+Table vaccination_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID
+  product_id UUID [not null]  // ref al producto/vacuna en inventario
+  vaccine_name string [not null] // snapshot del nombre
+  vaccine_brand string           // snapshot de la marca
+  batch_number string
+  application_date date [not null]
+  next_dose_date date
+  veterinarian_id UUID [not null]
+  observations text
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    application_date
+    next_dose_date
+  }
+}
+
+Ref: pets.id < vaccination_record.pet_id [delete: cascade]
+Ref: veterinarian.id < vaccination_record.veterinarian_id [delete: restrict]
+Ref: medical_record.id < vaccination_record.medical_record_id [delete: set null]
+Ref: products.id < vaccination_record.product_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// MÓDULO: FACTURACIÓN Y VENTAS (POS)
+////////////////////////////////////////////////////
+
+Table invoices {
+  id UUID [primary key]
+  series string [not null] // Ej. B001, F001, T001
+  correlative integer [not null] // Ej. 123
+  invoice_number string [not null, unique] // Ej. B001-00000123, F001-00000045, T001-00000890
+  invoice_type string [not null, default: 'boleta'] // boleta, factura, ticket
+  owner_id UUID // Nulo para venta mostrador / cliente genérico
+  appointment_id UUID // Columna simple (sin FK en la entidad): referencia lógica a appointments
+  veterinarian_id UUID // Médico referente (opcional)
+  payment_status string [not null, default: 'pagado'] // pendiente, pagado, anulado
+  subtotal decimal(10,2) [not null]
+  discount decimal(10,2) [not null, default: 0]
+  tax decimal(10,2) [not null, default: 0]
+  total decimal(10,2) [not null]
+  notes text
+  user_id UUID [not null] // Cajero / Usuario emisor
+  issued_at timestamp [not null]
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    (series, correlative) [unique]
+    invoice_number
+    owner_id
+    payment_status
+    issued_at
+  }
+}
+
+Ref: owners.id < invoices.owner_id [delete: set null]
+Ref: veterinarian.id < invoices.veterinarian_id [delete: set null]
+Ref: users.id < invoices.user_id [delete: restrict]
+
+Table invoice_payments {
+  id UUID [primary key]
+  invoice_id UUID [not null]
+  payment_method string [not null] // efectivo, tarjeta, yape_plin, transferencia, credito
+  amount decimal(10,2) [not null]
+  reference_number string // Nro de operación / Voucher de pago
+  created_at timestamp [not null]
+}
+
+Ref: invoices.id < invoice_payments.invoice_id [delete: cascade]
+
+Table invoice_items {
+  id UUID [primary key]
+  invoice_id UUID [not null]
+  variant_id UUID // Referencia a variante de producto (nulo si es servicio)
+  prescription_id UUID // Sin FK por ahora: trazabilidad de receta cuando se implemente el historial médico
+  service_name string // Nombre del servicio clínico/grooming (nulo si es producto)
+  description string [not null] // Snapshot del nombre al momento de venta
+  quantity decimal(10,3) [not null] // Soporta enteros y fraccionamientos (ej. 0.5 kg, 2 pastillas, 1.5 mL)
+  unit_price decimal(10,2) [not null]
+  discount decimal(10,2) [not null, default: 0]
+  subtotal decimal(10,2) [not null]
+}
+
+Ref: invoices.id < invoice_items.invoice_id [delete: cascade]
+Ref: product_variants.id < invoice_items.variant_id [delete: set null]
+
+Table invoice_item_lots {
+  id UUID [primary key]
+  invoice_item_id UUID [not null]
+  lot_id UUID [not null]
+  quantity decimal(10,3) [not null] // Cantidad consumida de este lote específico por FEFO
+}
+
+Ref: invoice_items.id < invoice_item_lots.invoice_item_id [delete: cascade]
+Ref: inventory_lots.id < invoice_item_lots.lot_id [delete: restrict]
+
+Table credit_notes {
+  id UUID [primary key]
+  invoice_id UUID [not null]
+  series string [not null] // Ej. NC01
+  correlative integer [not null] // Ej. 12
+  credit_note_number string [not null, unique] // Ej. NC01-00000012
+  reason string [not null] // devolucion, error_emision, descuento_post_venta
+  total decimal(10,2) [not null]
+  restock_inventory boolean [not null, default: true] // Si se devuelve la mercadería al inventario
+  user_id UUID [not null]
+  issued_at timestamp [not null]
+  created_at timestamp [not null]
+
+  indexes {
+    (series, correlative) [unique]
+    credit_note_number
+    invoice_id
+  }
+}
+
+Ref: invoices.id < credit_notes.invoice_id [delete: restrict]
+Ref: users.id < credit_notes.user_id [delete: restrict]
+
+Table credit_note_items {
+  id UUID [primary key]
+  credit_note_id UUID [not null]
+  invoice_item_id UUID [not null]
+  quantity decimal(10,3) [not null] // Cantidad devuelta (permite devoluciones parciales)
+  unit_price decimal(10,2) [not null]
+  subtotal decimal(10,2) [not null]
+}
+
+Ref: credit_notes.id < credit_note_items.credit_note_id [delete: cascade]
+Ref: invoice_items.id < credit_note_items.invoice_item_id [delete: restrict]
+
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+// [PLANEADO] - MÓDULOS PENDIENTES DE IMPLEMENTAR
+// Las tablas siguientes son diseño futuro; aún no
+// existen en el backend. Las Refs hacia tablas ya
+// implementadas (pets, owners, products, veterinarian,
+// medical_record) se crearán cuando se implemente cada módulo.
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////
+// [PLANEADO] MÓDULO: FOTOS ADICIONALES DE MASCOTAS
+////////////////////////////////////////////////////
+
+Table pet_photo {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  photo_url string [not null]
+  description string
+  uploaded_at timestamp [not null]
+}
+
+Ref: pets.id < pet_photo.pet_id [delete: cascade]
+
+////////////////////////////////////////////////////
+// [PLANEADO] MÓDULO: DESPARASITACIONES
+////////////////////////////////////////////////////
+
+Table deworming_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID
+  product_id UUID [not null]  // ref al producto en inventario
+  product_name string [not null] // snapshot
+  product_brand string
+  dosage string [not null]
+  application_date date [not null]
+  next_application_date date
+  veterinarian_id UUID [not null]
+  deworming_type string [not null] // interna, externa, ambas
+  observations text
+  created_at timestamp [not null]
+
+  indexes {
+    pet_id
+    application_date
+    next_application_date
+  }
+}
+
+Ref: pets.id < deworming_record.pet_id [delete: cascade]
+Ref: veterinarian.id < deworming_record.veterinarian_id [delete: restrict]
+Ref: medical_record.id < deworming_record.medical_record_id [delete: set null]
+Ref: products.id < deworming_record.product_id [delete: restrict]
+
+////////////////////////////////////////////////////
+// [PLANEADO] MÓDULO: CIRUGÍAS
+////////////////////////////////////////////////////
+
+Table surgery_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID [not null]
+  surgery_type string [not null]       // esterilizacion, trauma, tumor
+  surgery_date timestamp [not null]
+  veterinarian_id UUID [not null]   // cirujano principal
+  assistant_veterinarian_id UUID    // asistente
+  anesthesia_type string
+  duration_minutes integer
+  pre_surgery_notes text
+  surgery_notes text
+  post_surgery_notes text
+  complications text
+  status string [default: 'programada'] // programada, en_proceso, completada, cancelada
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    surgery_date
+    veterinarian_id
+  }
+}
+
+Ref: pets.id < surgery_record.pet_id [delete: cascade]
+Ref: medical_record.id < surgery_record.medical_record_id [delete: cascade]
+Ref: veterinarian.id < surgery_record.veterinarian_id [delete: restrict]
+Ref: veterinarian.id < surgery_record.assistant_veterinarian_id [delete: set null]
+
+////////////////////////////////////////////////////
+// [PLANEADO] MÓDULO: HOSPITALIZACIÓN
+////////////////////////////////////////////////////
+
+Table hospitalization_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID [not null]
+  admission_date timestamp [not null]
+  discharge_date timestamp
+  reason text [not null]
+  cage_number string
+  veterinarian_id UUID [not null]
+  status string [default: 'activo'] // activo, alta, transferido
+  final_diagnosis text
+  discharge_notes text
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    admission_date
+    status
+  }
+}
+
+Ref: pets.id < hospitalization_record.pet_id [delete: cascade]
+Ref: medical_record.id < hospitalization_record.medical_record_id [delete: cascade]
+Ref: veterinarian.id < hospitalization_record.veterinarian_id [delete: restrict]
+
+Table hospitalization_evolution {
+  id UUID [primary key]
+  hospitalization_record_id UUID [not null]
+  evolution_date timestamp [not null]
+  veterinarian_id UUID [not null]
+  weight decimal(5,2)
+  temperature decimal(4,2)
+  heart_rate integer
+  respiratory_rate integer
+  food_intake string    // bueno, regular, malo, no_comio
+  water_intake string
+  urination string      // normal, aumentada, disminuida, ausente
+  defecation string     // normal, diarrea, estreñimiento, ausente
+  activity_level string // activo, letargico, postrado
+  medication_administered text
+  procedures_performed text
+  observations text
+  created_at timestamp [not null]
+
+  indexes {
+    hospitalization_record_id
+    evolution_date
+  }
+}
+
+Ref: hospitalization_record.id < hospitalization_evolution.hospitalization_record_id [delete: cascade]
+Ref: veterinarian.id < hospitalization_evolution.veterinarian_id [delete: restrict]

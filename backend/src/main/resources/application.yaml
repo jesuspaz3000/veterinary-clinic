@@ -1,0 +1,69 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  forward-headers-strategy: framework
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  application:
+    name: vet-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vet_db
+    username: postgres
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  jackson:
+    time-zone: UTC
+
+jwt:
+  secret: ${JWT_SECRET:changeme-set-a-real-secret-in-env}
+  access-token-expiration: PT1H
+  refresh-token-expiration: PT24H
+  issuer: vet-backend
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  cors:
+    allowed-origins: http://localhost:3000
+  auth:
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:false}
+      same-site: ${AUTH_COOKIE_SAMESITE:Lax}
+      domain: ${AUTH_COOKIE_DOMAIN:}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    try-it-out-enabled: true
+    filter: true
+    with-credentials: true
+
+storage:
+  upload-dir: uploads

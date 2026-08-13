@@ -1,0 +1,22 @@
+package com.veterinaria.backend.administrative.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateAdministrativeAreaDTO {
+
+    @NotBlank(message = "El nombre del área es obligatorio")
+    @Size(max = 100, message = "El nombre no puede exceder los 100 caracteres")
+    private String name;
+
+    @Size(max = 500, message = "La descripción no puede exceder los 500 caracteres")
+    private String description;
+}
