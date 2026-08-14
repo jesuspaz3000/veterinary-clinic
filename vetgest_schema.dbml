@@ -2,7 +2,7 @@
 // VetGest - Esquema de Base de Datos
 // - Secciones sin marcar: implementadas en el backend
 // - Secciones marcadas con [PLANEADO]: diseñadas, pendientes de implementar
-// Última verificación contra backend: 2026-08-12
+// Última verificación contra backend: 2026-08-13
 ////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////
@@ -184,6 +184,7 @@ Table veterinarian_schedule {
   start_time time [not null]
   end_time time [not null]
   is_available boolean [default: true]
+  is_active boolean [default: true] // eliminación lógica del registro de horario
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -201,6 +202,7 @@ Table grooming_schedule {
   start_time time [not null]
   end_time time [not null]
   is_available boolean [default: true]
+  is_active boolean [default: true] // eliminación lógica del registro de horario
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -285,6 +287,7 @@ Table product_variants {
   stock integer [not null, default: 0]
   min_stock integer [default: 5]        // Alerta de reabastecimiento
   unit_measure string [not null]        // kg, ml, tabletas, frasco, unidad
+  administration_route string [not null, default: 'oral'] // oral, inyectable, topico, otro
   weight_or_volume decimal(10,2)
   is_active boolean [not null, default: true]
   created_at timestamp [not null]
@@ -375,6 +378,20 @@ Table pets {
 }
 
 Ref: owners.id < pets.owner_id [delete: restrict]
+
+Table pet_photo {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  photo_url string [not null]
+  description string
+  uploaded_at timestamp [not null]
+
+  indexes {
+    pet_id
+  }
+}
+
+Ref: pets.id < pet_photo.pet_id [delete: cascade]
 
 ////////////////////////////////////////////////////
 // MÓDULO: CITAS
@@ -482,6 +499,7 @@ Table vaccination_record {
   pet_id UUID [not null]
   medical_record_id UUID
   product_id UUID [not null]  // ref al producto/vacuna en inventario
+  product_variant_id UUID // presentación de la que se descontó stock (FEFO); requerido en altas nuevas
   vaccine_name string [not null] // snapshot del nombre
   vaccine_brand string           // snapshot de la marca
   batch_number string
@@ -504,6 +522,7 @@ Ref: pets.id < vaccination_record.pet_id [delete: cascade]
 Ref: veterinarian.id < vaccination_record.veterinarian_id [delete: restrict]
 Ref: medical_record.id < vaccination_record.medical_record_id [delete: set null]
 Ref: products.id < vaccination_record.product_id [delete: restrict]
+Ref: product_variants.id < vaccination_record.product_variant_id [delete: restrict]
 
 ////////////////////////////////////////////////////
 // MÓDULO: DESPARASITACIONES
@@ -514,6 +533,7 @@ Table deworming_record {
   pet_id UUID [not null]
   medical_record_id UUID
   product_id UUID [not null]  // ref al producto en inventario
+  product_variant_id UUID // presentación de la que se descontó stock (FEFO); requerido en altas nuevas
   product_name string [not null] // snapshot
   product_brand string
   dosage string [not null]
@@ -537,6 +557,7 @@ Ref: pets.id < deworming_record.pet_id [delete: cascade]
 Ref: veterinarian.id < deworming_record.veterinarian_id [delete: restrict]
 Ref: medical_record.id < deworming_record.medical_record_id [delete: set null]
 Ref: products.id < deworming_record.product_id [delete: restrict]
+Ref: product_variants.id < deworming_record.product_variant_id [delete: restrict]
 
 ////////////////////////////////////////////////////
 // MÓDULO: CIRUGÍAS
@@ -740,27 +761,5 @@ Table credit_note_items {
 
 Ref: credit_notes.id < credit_note_items.credit_note_id [delete: cascade]
 Ref: invoice_items.id < credit_note_items.invoice_item_id [delete: restrict]
-
-////////////////////////////////////////////////////
-////////////////////////////////////////////////////
-// [PLANEADO] - MÓDULOS PENDIENTES DE IMPLEMENTAR
-// Las tablas siguientes son diseño futuro; aún no
-// existen en el backend. Las Refs hacia tablas ya
-// implementadas (pets, owners, products, veterinarian,
-// medical_record) se crearán cuando se implemente cada módulo.
-////////////////////////////////////////////////////
-////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////
-// [PLANEADO] MÓDULO: FOTOS ADICIONALES DE MASCOTAS
-////////////////////////////////////////////////////
-
-Table pet_photo {
-  id UUID [primary key]
-  pet_id UUID [not null]
-  photo_url string [not null]
-  description string
-  uploaded_at timestamp [not null]
-}
 
 Ref: pets.id < pet_photo.pet_id [delete: cascade]
