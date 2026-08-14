@@ -13,7 +13,11 @@ public interface VeterinarianScheduleRepository extends JpaRepository<Veterinari
 
     List<VeterinarianSchedule> findByVeterinarianIdOrderByDayOfWeekAsc(UUID veterinarianId);
 
-    Optional<VeterinarianSchedule> findByVeterinarianIdAndDayOfWeek(UUID veterinarianId, Integer dayOfWeek);
+    List<VeterinarianSchedule> findByVeterinarianIdAndIsActiveTrueOrderByDayOfWeekAsc(UUID veterinarianId);
+
+    List<VeterinarianSchedule> findByVeterinarianIdAndIsActiveFalseOrderByDayOfWeekAsc(UUID veterinarianId);
+
+    Optional<VeterinarianSchedule> findByVeterinarianIdAndDayOfWeekAndIsActiveTrue(UUID veterinarianId, Integer dayOfWeek);
 
     boolean existsByVeterinarianIdAndDayOfWeek(UUID veterinarianId, Integer dayOfWeek);
 

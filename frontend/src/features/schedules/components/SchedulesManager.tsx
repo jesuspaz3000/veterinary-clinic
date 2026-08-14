@@ -12,12 +12,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  MenuItem,
   Tab,
   Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import WeeklyCalendar, { getWeekStart } from "@/shared/components/WeeklyCalendar";
 import { useAuthStore } from "@/store/auth.store";
 import { PERMISSIONS } from "@/shared/config/permissions";
@@ -30,8 +32,10 @@ import { useSchedules } from "../hooks/useSchedules";
 import { SchedulesService } from "../service/schedules.service";
 import {
   DAY_OF_WEEK_LABELS,
+  SCHEDULE_STATUS_FILTERS,
   ScheduleProfessionalKind,
   ScheduleResponse,
+  ScheduleStatusFilter,
 } from "../type/schedulesTypes";
 import ScheduleFormDialog from "./ScheduleFormDialog";
 
@@ -54,6 +58,9 @@ export default function SchedulesManager() {
   const [groomers, setGroomers] = useState<GroomingStaffResponse[]>([]);
   const [selectedProfessional, setSelectedProfessional] = useState<ProfessionalItem | null>(null);
   const [loadingProfessionals, setLoadingProfessionals] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>("activo");
+  // Días ya registrados (activos o no) para bloquearlos al crear, independiente del filtro visible
+  const [allDaysTaken, setAllDaysTaken] = useState<number[]>([]);
 
   const { schedules, loading, error, fetchSchedules, clearSchedules } = useSchedules();
 
@@ -64,6 +71,9 @@ export default function SchedulesManager() {
   const [deletingSchedule, setDeletingSchedule] = useState<ScheduleResponse | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [reactivatingSchedule, setReactivatingSchedule] = useState<ScheduleResponse | null>(null);
+  const [reactivating, setReactivating] = useState(false);
+  const [reactivateError, setReactivateError] = useState<string | null>(null);
 
   // Los horarios son recurrentes: el calendario solo usa el lunes de la semana
   // actual como referencia para posicionar los días (sin navegación por semanas)
@@ -107,26 +117,47 @@ export default function SchedulesManager() {
     [schedules, weekStart]
   );
 
-  const usedDays = useMemo(() => schedules.map((s) => s.dayOfWeek), [schedules]);
-
   const refresh = () => {
     if (selectedProfessional) {
-      void fetchSchedules(kind, selectedProfessional.id);
+      void fetchSchedules(kind, selectedProfessional.id, statusFilter);
+      void refreshAllDaysTaken(selectedProfessional.id);
+    }
+  };
+
+  // Días con horario registrado (activo o inactivo): se usa para bloquear el
+  // día en el formulario de creación sin importar el filtro de estado visible
+  const refreshAllDaysTaken = async (professionalId: string) => {
+    try {
+      const all = await SchedulesService.getSchedules(kind, professionalId, "todos");
+      setAllDaysTaken(all.map((s) => s.dayOfWeek));
+    } catch (err) {
+      console.error("Error fetching all schedule days:", err);
+      setAllDaysTaken([]);
     }
   };
 
   const handleKindChange = (_event: React.SyntheticEvent, newValue: ScheduleProfessionalKind) => {
     setKind(newValue);
     setSelectedProfessional(null);
+    setAllDaysTaken([]);
     clearSchedules();
   };
 
   const handleProfessionalChange = (_event: unknown, newValue: ProfessionalItem | null) => {
     setSelectedProfessional(newValue);
     if (newValue) {
-      void fetchSchedules(kind, newValue.id);
+      void fetchSchedules(kind, newValue.id, statusFilter);
+      void refreshAllDaysTaken(newValue.id);
     } else {
+      setAllDaysTaken([]);
       clearSchedules();
+    }
+  };
+
+  const handleStatusFilterChange = (newValue: ScheduleStatusFilter) => {
+    setStatusFilter(newValue);
+    if (selectedProfessional) {
+      void fetchSchedules(kind, selectedProfessional.id, newValue);
     }
   };
 
@@ -139,8 +170,13 @@ export default function SchedulesManager() {
     setFormOpen(true);
   };
 
-  // Clic en un horario: edita; si solo tiene permiso de eliminación, pide confirmar
+  // Clic en un horario: si está inactivo, ofrece reactivarlo; si está activo,
+  // edita (o pide confirmar eliminación si solo hay permiso de borrado)
   const handleEventClick = (event: ScheduleCalendarEvent) => {
+    if (!event.isActive) {
+      if (canUpdate) setReactivatingSchedule(event);
+      return;
+    }
     if (canUpdate) {
       setSlotPrefill(null);
       setEditingSchedule(event);
@@ -170,6 +206,23 @@ export default function SchedulesManager() {
       );
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!reactivatingSchedule) return;
+    setReactivating(true);
+    setReactivateError(null);
+    try {
+      await SchedulesService.reactivateSchedule(kind, reactivatingSchedule.id);
+      setReactivatingSchedule(null);
+      refresh();
+    } catch (err: unknown) {
+      setReactivateError(
+        err instanceof Error ? err.message : "Ocurrió un error al reactivar el horario."
+      );
+    } finally {
+      setReactivating(false);
     }
   };
 
@@ -229,6 +282,21 @@ export default function SchedulesManager() {
               />
             )}
           />
+
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => handleStatusFilterChange(e.target.value as ScheduleStatusFilter)}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {SCHEDULE_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
         </Box>
 
         {canCreate && (
@@ -281,6 +349,7 @@ export default function SchedulesManager() {
                     px: 1,
                     py: 0.5,
                     overflow: "hidden",
+                    opacity: schedule.isActive ? 1 : 0.5,
                     transition: "background-color 0.2s ease",
                     "&:hover": { bgcolor: `${color}40` },
                   };
@@ -309,7 +378,11 @@ export default function SchedulesManager() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {schedule.isAvailable ? "Disponible" : "No disponible"}
+                  {!schedule.isActive
+                    ? "Inactivo (clic para reactivar)"
+                    : schedule.isAvailable
+                      ? "Disponible"
+                      : "No disponible"}
                 </Typography>
               </Box>
             )}
@@ -333,6 +406,14 @@ export default function SchedulesManager() {
               variant="outlined"
               sx={{ fontWeight: 600, borderRadius: "6px" }}
             />
+            {statusFilter !== "activo" && (
+              <Chip
+                label="Inactivo"
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 600, borderRadius: "6px", opacity: 0.6 }}
+              />
+            )}
             {canCreate && (
               <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                 Tip: haz clic en una franja vacía del calendario para agregar un horario en ese día
@@ -356,7 +437,7 @@ export default function SchedulesManager() {
           kind={kind}
           professionalId={selectedProfessional.id}
           schedule={editingSchedule}
-          usedDays={usedDays}
+          usedDays={allDaysTaken}
           initialDayOfWeek={slotPrefill?.dayOfWeek ?? null}
           initialTime={slotPrefill?.time ?? null}
           onDelete={canDelete ? handleDeleteFromForm : undefined}
@@ -405,6 +486,53 @@ export default function SchedulesManager() {
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
             {deleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirmación de reactivación */}
+      <Dialog
+        open={reactivatingSchedule !== null}
+        onClose={reactivating ? undefined : () => setReactivatingSchedule(null)}
+        maxWidth="xs"
+        fullWidth
+        disableRestoreFocus
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Reactivar horario</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+            {reactivateError && (
+              <Alert severity="error" onClose={() => setReactivateError(null)}>
+                {reactivateError}
+              </Alert>
+            )}
+            <Typography variant="body2" color="text.secondary">
+              ¿Deseas reactivar el horario del{" "}
+              <strong>{reactivatingSchedule ? DAY_OF_WEEK_LABELS[reactivatingSchedule.dayOfWeek] : ""}</strong>
+              {reactivatingSchedule
+                ? ` (${reactivatingSchedule.startTime.slice(0, 5)} — ${reactivatingSchedule.endTime.slice(0, 5)})`
+                : ""}
+              ?
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            onClick={() => setReactivatingSchedule(null)}
+            disabled={reactivating}
+            sx={{ textTransform: "none" }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<RestoreRoundedIcon />}
+            onClick={handleReactivate}
+            disabled={reactivating}
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          >
+            {reactivating ? "Reactivando..." : "Reactivar"}
           </Button>
         </DialogActions>
       </Dialog>

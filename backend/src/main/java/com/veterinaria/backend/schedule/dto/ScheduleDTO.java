@@ -19,6 +19,7 @@ public class ScheduleDTO {
     private LocalTime startTime;
     private LocalTime endTime;
     private Boolean isAvailable;
+    private Boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
 }

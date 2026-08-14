@@ -17,6 +17,7 @@ public class ScheduleMapper {
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .isAvailable(schedule.getIsAvailable())
+                .isActive(schedule.getIsActive())
                 .createdAt(schedule.getCreatedAt())
                 .updatedAt(schedule.getUpdatedAt())
                 .build();
@@ -31,6 +32,7 @@ public class ScheduleMapper {
                 .startTime(schedule.getStartTime())
                 .endTime(schedule.getEndTime())
                 .isAvailable(schedule.getIsAvailable())
+                .isActive(schedule.getIsActive())
                 .createdAt(schedule.getCreatedAt())
                 .updatedAt(schedule.getUpdatedAt())
                 .build();

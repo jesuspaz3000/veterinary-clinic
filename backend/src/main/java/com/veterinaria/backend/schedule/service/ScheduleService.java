@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface ScheduleService {
 
-    List<ScheduleDTO> getVeterinarianSchedules(UUID veterinarianId);
+    List<ScheduleDTO> getVeterinarianSchedules(UUID veterinarianId, String status);
 
-    List<ScheduleDTO> getGroomingSchedules(UUID groomingStaffId);
+    List<ScheduleDTO> getGroomingSchedules(UUID groomingStaffId, String status);
 
     ScheduleDTO createVeterinarianSchedule(UUID veterinarianId, ScheduleRequestDTO dto);
 
@@ -23,4 +23,8 @@ public interface ScheduleService {
     void deleteVeterinarianSchedule(UUID scheduleId);
 
     void deleteGroomingSchedule(UUID scheduleId);
+
+    void reactivateVeterinarianSchedule(UUID scheduleId);
+
+    void reactivateGroomingSchedule(UUID scheduleId);
 }

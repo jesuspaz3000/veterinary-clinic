@@ -36,18 +36,30 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ScheduleDTO> getVeterinarianSchedules(UUID veterinarianId) {
-        return veterinarianScheduleRepository.findByVeterinarianIdOrderByDayOfWeekAsc(veterinarianId).stream()
-                .map(scheduleMapper::toDTO)
-                .toList();
+    public List<ScheduleDTO> getVeterinarianSchedules(UUID veterinarianId, String status) {
+        List<VeterinarianSchedule> schedules;
+        if (status == null || status.isBlank() || "activo".equalsIgnoreCase(status.trim())) {
+            schedules = veterinarianScheduleRepository.findByVeterinarianIdAndIsActiveTrueOrderByDayOfWeekAsc(veterinarianId);
+        } else if ("inactivo".equalsIgnoreCase(status.trim())) {
+            schedules = veterinarianScheduleRepository.findByVeterinarianIdAndIsActiveFalseOrderByDayOfWeekAsc(veterinarianId);
+        } else {
+            schedules = veterinarianScheduleRepository.findByVeterinarianIdOrderByDayOfWeekAsc(veterinarianId);
+        }
+        return schedules.stream().map(scheduleMapper::toDTO).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ScheduleDTO> getGroomingSchedules(UUID groomingStaffId) {
-        return groomingScheduleRepository.findByGroomingStaffIdOrderByDayOfWeekAsc(groomingStaffId).stream()
-                .map(scheduleMapper::toDTO)
-                .toList();
+    public List<ScheduleDTO> getGroomingSchedules(UUID groomingStaffId, String status) {
+        List<GroomingSchedule> schedules;
+        if (status == null || status.isBlank() || "activo".equalsIgnoreCase(status.trim())) {
+            schedules = groomingScheduleRepository.findByGroomingStaffIdAndIsActiveTrueOrderByDayOfWeekAsc(groomingStaffId);
+        } else if ("inactivo".equalsIgnoreCase(status.trim())) {
+            schedules = groomingScheduleRepository.findByGroomingStaffIdAndIsActiveFalseOrderByDayOfWeekAsc(groomingStaffId);
+        } else {
+            schedules = groomingScheduleRepository.findByGroomingStaffIdOrderByDayOfWeekAsc(groomingStaffId);
+        }
+        return schedules.stream().map(scheduleMapper::toDTO).toList();
     }
 
     @Override
@@ -103,8 +115,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleDTO updateVeterinarianSchedule(UUID scheduleId, ScheduleRequestDTO dto) {
         validateTimes(dto);
 
-        VeterinarianSchedule schedule = veterinarianScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
+        VeterinarianSchedule schedule = findActiveVeterinarianSchedule(scheduleId);
 
         if (veterinarianScheduleRepository.existsByVeterinarianIdAndDayOfWeekAndIdNot(
                 schedule.getVeterinarian().getId(), dto.getDayOfWeek(), scheduleId)) {
@@ -126,8 +137,7 @@ public class ScheduleServiceImpl implements ScheduleService {
     public ScheduleDTO updateGroomingSchedule(UUID scheduleId, ScheduleRequestDTO dto) {
         validateTimes(dto);
 
-        GroomingSchedule schedule = groomingScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
+        GroomingSchedule schedule = findActiveGroomingSchedule(scheduleId);
 
         if (groomingScheduleRepository.existsByGroomingStaffIdAndDayOfWeekAndIdNot(
                 schedule.getGroomingStaff().getId(), dto.getDayOfWeek(), scheduleId)) {
@@ -147,19 +157,51 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     @Transactional
     public void deleteVeterinarianSchedule(UUID scheduleId) {
-        VeterinarianSchedule schedule = veterinarianScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
-        veterinarianScheduleRepository.delete(schedule);
-        log.info("Veterinarian schedule deleted: {}", scheduleId);
+        VeterinarianSchedule schedule = findActiveVeterinarianSchedule(scheduleId);
+        schedule.setIsActive(false);
+        veterinarianScheduleRepository.saveAndFlush(schedule);
+        log.info("Veterinarian schedule deactivated: {}", scheduleId);
     }
 
     @Override
     @Transactional
     public void deleteGroomingSchedule(UUID scheduleId) {
+        GroomingSchedule schedule = findActiveGroomingSchedule(scheduleId);
+        schedule.setIsActive(false);
+        groomingScheduleRepository.saveAndFlush(schedule);
+        log.info("Grooming schedule deactivated: {}", scheduleId);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateVeterinarianSchedule(UUID scheduleId) {
+        VeterinarianSchedule schedule = veterinarianScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
+        schedule.setIsActive(true);
+        veterinarianScheduleRepository.saveAndFlush(schedule);
+        log.info("Veterinarian schedule reactivated: {}", scheduleId);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateGroomingSchedule(UUID scheduleId) {
         GroomingSchedule schedule = groomingScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
-        groomingScheduleRepository.delete(schedule);
-        log.info("Grooming schedule deleted: {}", scheduleId);
+        schedule.setIsActive(true);
+        groomingScheduleRepository.saveAndFlush(schedule);
+        log.info("Grooming schedule reactivated: {}", scheduleId);
+    }
+
+    private VeterinarianSchedule findActiveVeterinarianSchedule(UUID scheduleId) {
+        return veterinarianScheduleRepository.findById(scheduleId)
+                .filter(VeterinarianSchedule::getIsActive)
+                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
+    }
+
+    private GroomingSchedule findActiveGroomingSchedule(UUID scheduleId) {
+        return groomingScheduleRepository.findById(scheduleId)
+                .filter(GroomingSchedule::getIsActive)
+                .orElseThrow(() -> new NotFoundException("Horario no encontrado"));
     }
 
     private void validateTimes(ScheduleRequestDTO dto) {

@@ -13,7 +13,11 @@ public interface GroomingScheduleRepository extends JpaRepository<GroomingSchedu
 
     List<GroomingSchedule> findByGroomingStaffIdOrderByDayOfWeekAsc(UUID groomingStaffId);
 
-    Optional<GroomingSchedule> findByGroomingStaffIdAndDayOfWeek(UUID groomingStaffId, Integer dayOfWeek);
+    List<GroomingSchedule> findByGroomingStaffIdAndIsActiveTrueOrderByDayOfWeekAsc(UUID groomingStaffId);
+
+    List<GroomingSchedule> findByGroomingStaffIdAndIsActiveFalseOrderByDayOfWeekAsc(UUID groomingStaffId);
+
+    Optional<GroomingSchedule> findByGroomingStaffIdAndDayOfWeekAndIsActiveTrue(UUID groomingStaffId, Integer dayOfWeek);
 
     boolean existsByGroomingStaffIdAndDayOfWeek(UUID groomingStaffId, Integer dayOfWeek);
 

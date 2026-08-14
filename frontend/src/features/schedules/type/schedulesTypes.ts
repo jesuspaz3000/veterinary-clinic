@@ -5,6 +5,7 @@ export interface ScheduleResponse {
     startTime: string; // HH:mm:ss
     endTime: string; // HH:mm:ss
     isAvailable: boolean;
+    isActive: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -17,6 +18,14 @@ export interface ScheduleRequest {
 }
 
 export type ScheduleProfessionalKind = "veterinarian" | "grooming";
+
+export type ScheduleStatusFilter = "activo" | "inactivo" | "todos";
+
+export const SCHEDULE_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
 
 export const DAY_OF_WEEK_LABELS: Record<number, string> = {
     0: "Domingo",

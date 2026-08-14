@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { SchedulesService } from "../service/schedules.service";
-import { ScheduleProfessionalKind, ScheduleResponse } from "../type/schedulesTypes";
+import { ScheduleProfessionalKind, ScheduleResponse, ScheduleStatusFilter } from "../type/schedulesTypes";
 
 export function useSchedules() {
     const [schedules, setSchedules] = useState<ScheduleResponse[]>([]);
@@ -8,11 +8,11 @@ export function useSchedules() {
     const [error, setError] = useState<Error | null>(null);
 
     const fetchSchedules = useCallback(
-        async (kind: ScheduleProfessionalKind, professionalId: string) => {
+        async (kind: ScheduleProfessionalKind, professionalId: string, status?: ScheduleStatusFilter) => {
             setLoading(true);
             setError(null);
             try {
-                const data = await SchedulesService.getSchedules(kind, professionalId);
+                const data = await SchedulesService.getSchedules(kind, professionalId, status);
                 setSchedules(data);
             } catch (err: unknown) {
                 console.error("Error fetching schedules:", err);

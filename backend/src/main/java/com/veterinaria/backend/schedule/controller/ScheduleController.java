@@ -29,15 +29,21 @@ public class ScheduleController {
     @GetMapping("/veterinarians/{veterinarianId}")
     @PreAuthorize("hasAuthority('SCHEDULES_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     @Operation(summary = "Get veterinarian schedules", description = "Get the weekly work schedule of a veterinarian")
-    public ResponseEntity<List<ScheduleDTO>> getVeterinarianSchedules(@PathVariable UUID veterinarianId) {
-        return ResponseEntity.ok(scheduleService.getVeterinarianSchedules(veterinarianId));
+    public ResponseEntity<List<ScheduleDTO>> getVeterinarianSchedules(
+            @PathVariable UUID veterinarianId,
+            @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(scheduleService.getVeterinarianSchedules(veterinarianId, status));
     }
 
     @GetMapping("/grooming/{groomingStaffId}")
     @PreAuthorize("hasAuthority('SCHEDULES_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     @Operation(summary = "Get grooming staff schedules", description = "Get the weekly work schedule of a grooming staff member")
-    public ResponseEntity<List<ScheduleDTO>> getGroomingSchedules(@PathVariable UUID groomingStaffId) {
-        return ResponseEntity.ok(scheduleService.getGroomingSchedules(groomingStaffId));
+    public ResponseEntity<List<ScheduleDTO>> getGroomingSchedules(
+            @PathVariable UUID groomingStaffId,
+            @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(scheduleService.getGroomingSchedules(groomingStaffId, status));
     }
 
     @PostMapping("/veterinarians/{veterinarianId}")
@@ -94,5 +100,21 @@ public class ScheduleController {
     public ResponseEntity<MessageResponse> deleteGroomingSchedule(@PathVariable UUID scheduleId) {
         scheduleService.deleteGroomingSchedule(scheduleId);
         return ResponseEntity.ok(new MessageResponse("Horario eliminado exitosamente"));
+    }
+
+    @PostMapping("/veterinarians/{scheduleId}/reactivate")
+    @PreAuthorize("hasAuthority('SCHEDULES_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate veterinarian schedule", description = "Reactivate a previously deleted veterinarian schedule entry")
+    public ResponseEntity<MessageResponse> reactivateVeterinarianSchedule(@PathVariable UUID scheduleId) {
+        scheduleService.reactivateVeterinarianSchedule(scheduleId);
+        return ResponseEntity.ok(new MessageResponse("Horario reactivado exitosamente"));
+    }
+
+    @PostMapping("/grooming/{scheduleId}/reactivate")
+    @PreAuthorize("hasAuthority('SCHEDULES_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate grooming staff schedule", description = "Reactivate a previously deleted grooming staff schedule entry")
+    public ResponseEntity<MessageResponse> reactivateGroomingSchedule(@PathVariable UUID scheduleId) {
+        scheduleService.reactivateGroomingSchedule(scheduleId);
+        return ResponseEntity.ok(new MessageResponse("Horario reactivado exitosamente"));
     }
 }

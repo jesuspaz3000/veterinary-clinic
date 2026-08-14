@@ -45,6 +45,12 @@ public class VeterinarianSchedule {
     @Builder.Default
     private Boolean isAvailable = true;
 
+    // Eliminación lógica del registro de horario (distinto de isAvailable, que
+    // indica si ese día de la semana es laborable)
+    @Column(name = "is_active", nullable = false, columnDefinition = "boolean not null default true")
+    @Builder.Default
+    private Boolean isActive = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
