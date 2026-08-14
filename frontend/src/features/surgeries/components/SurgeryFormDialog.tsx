@@ -272,7 +272,7 @@ export default function SurgeryFormDialog({
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
             <Autocomplete
-              options={vets}
+              options={vets.filter((v) => !selectedAssistant || v.id !== selectedAssistant.id)}
               value={selectedVet}
               onChange={(_e, newValue) => setSelectedVet(newValue)}
               getOptionLabel={(option) => getUserDisplayName(option.user, "Veterinario")}
@@ -282,7 +282,7 @@ export default function SurgeryFormDialog({
               renderInput={(params) => <TextField {...params} label="Cirujano principal" required />}
             />
             <Autocomplete
-              options={vets}
+              options={vets.filter((v) => !selectedVet || v.id !== selectedVet.id)}
               value={selectedAssistant}
               onChange={(_e, newValue) => setSelectedAssistant(newValue)}
               getOptionLabel={(option) => getUserDisplayName(option.user, "Veterinario")}
@@ -343,21 +343,23 @@ export default function SurgeryFormDialog({
               max={1440}
               disabled={saving}
             />
-            <TextField
-              select
-              label="Estado"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              disabled={saving}
-              fullWidth
-              required
-            >
-              {SURGERY_STATUSES.map((s) => (
-                <MenuItem key={s} value={s}>
-                  {SURGERY_STATUS_LABELS[s]}
-                </MenuItem>
-              ))}
-            </TextField>
+            {isEditing && (
+              <TextField
+                select
+                label="Estado"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                disabled={saving}
+                fullWidth
+                required
+              >
+                {SURGERY_STATUSES.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {SURGERY_STATUS_LABELS[s]}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
           </Box>
 
           <Divider sx={{ my: 0.5 }} />

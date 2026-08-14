@@ -1,6 +1,7 @@
 package com.veterinaria.backend.surgery.service.Impl;
 
 import com.veterinaria.backend.common.exception.BusinessException;
+import com.veterinaria.backend.common.exception.ConflictException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.medicalrecord.model.MedicalRecord;
 import com.veterinaria.backend.medicalrecord.repository.MedicalRecordRepository;
@@ -23,7 +24,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,6 +36,16 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
 
     private static final Set<String> SURGERY_TYPES = Set.of("esterilizacion", "trauma", "tumor");
     private static final Set<String> STATUSES = Set.of("programada", "en_proceso", "completada", "cancelada");
+    // Duración asumida para el choque de horario cuando no se especifica una duración
+    private static final int DEFAULT_DURATION_MINUTES = 60;
+
+    // Transiciones de estado permitidas (incluye la identidad para permitir guardar sin cambiar de estado)
+    private static final Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
+            "programada", Set.of("programada", "en_proceso", "cancelada"),
+            "en_proceso", Set.of("en_proceso", "completada", "cancelada"),
+            "completada", Set.of("completada"),
+            "cancelada", Set.of("cancelada")
+    );
 
     private final SurgeryRecordRepository surgeryRecordRepository;
     private final PetRepository petRepository;
@@ -58,14 +71,25 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
     @Override
     @Transactional
     public SurgeryRecordDTO createSurgeryRecord(CreateSurgeryRecordDTO dto) {
+        if (dto.getSurgeryDate().isBefore(Instant.now())) {
+            throw new BusinessException("La fecha de la cirugía no puede ser en el pasado");
+        }
+
         Pet pet = petRepository.findById(dto.getPetId())
                 .orElseThrow(() -> new NotFoundException("Mascota no encontrada"));
         MedicalRecord medicalRecord = resolveMedicalRecord(dto.getMedicalRecordId(), pet);
-        Veterinarian veterinarian = veterinarianRepository.findById(dto.getVeterinarianId())
-                .orElseThrow(() -> new NotFoundException("Cirujano principal no encontrado"));
+        Veterinarian veterinarian = findActiveVeterinarian(dto.getVeterinarianId(), "El cirujano principal");
         Veterinarian assistant = resolveAssistant(dto.getAssistantVeterinarianId(), veterinarian);
         String surgeryType = validateSurgeryType(dto.getSurgeryType());
-        String status = validateStatus(dto.getStatus() != null && !dto.getStatus().isBlank() ? dto.getStatus() : "programada");
+        // Una cirugía nueva siempre empieza programada; el estado solo avanza vía edición
+        String status = "programada";
+
+        Instant end = dto.getSurgeryDate().plus(Duration.ofMinutes(
+                dto.getDurationMinutes() != null ? dto.getDurationMinutes() : DEFAULT_DURATION_MINUTES));
+        validateNoSurgeryOverlap(veterinarian.getId(), dto.getSurgeryDate(), end, null);
+        if (assistant != null) {
+            validateNoSurgeryOverlap(assistant.getId(), dto.getSurgeryDate(), end, null);
+        }
 
         SurgeryRecord record = SurgeryRecord.builder()
                 .pet(pet)
@@ -94,11 +118,25 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
         Pet pet = petRepository.findById(dto.getPetId())
                 .orElseThrow(() -> new NotFoundException("Mascota no encontrada"));
         MedicalRecord medicalRecord = resolveMedicalRecord(dto.getMedicalRecordId(), pet);
-        Veterinarian veterinarian = veterinarianRepository.findById(dto.getVeterinarianId())
-                .orElseThrow(() -> new NotFoundException("Cirujano principal no encontrado"));
+        Veterinarian veterinarian = findActiveVeterinarian(dto.getVeterinarianId(), "El cirujano principal");
         Veterinarian assistant = resolveAssistant(dto.getAssistantVeterinarianId(), veterinarian);
         String surgeryType = validateSurgeryType(dto.getSurgeryType());
         String status = validateStatus(dto.getStatus());
+        Set<String> allowedNext = VALID_TRANSITIONS.get(record.getStatus());
+        if (allowedNext == null || !allowedNext.contains(status)) {
+            throw new BusinessException("No se puede cambiar el estado de la cirugía de '" + record.getStatus() + "' a '" + status + "'");
+        }
+
+        // Solo se valida choque de horario si la cirugía sigue ocupando una franja
+        // (programada/en_proceso); una ya completada o cancelada no bloquea nada
+        if ("programada".equals(status) || "en_proceso".equals(status)) {
+            Instant end = dto.getSurgeryDate().plus(Duration.ofMinutes(
+                    dto.getDurationMinutes() != null ? dto.getDurationMinutes() : DEFAULT_DURATION_MINUTES));
+            validateNoSurgeryOverlap(veterinarian.getId(), dto.getSurgeryDate(), end, record.getId());
+            if (assistant != null) {
+                validateNoSurgeryOverlap(assistant.getId(), dto.getSurgeryDate(), end, record.getId());
+            }
+        }
 
         record.setPet(pet);
         record.setMedicalRecord(medicalRecord);
@@ -158,8 +196,27 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
         if (assistantVeterinarianId.equals(primarySurgeon.getId())) {
             throw new BusinessException("El veterinario asistente debe ser distinto al cirujano principal");
         }
-        return veterinarianRepository.findById(assistantVeterinarianId)
-                .orElseThrow(() -> new NotFoundException("Veterinario asistente no encontrado"));
+        return findActiveVeterinarian(assistantVeterinarianId, "El veterinario asistente");
+    }
+
+    private Veterinarian findActiveVeterinarian(UUID veterinarianId, String label) {
+        return veterinarianRepository.findById(veterinarianId)
+                .filter(v -> "activo".equalsIgnoreCase(v.getStatus()))
+                .orElseThrow(() -> new NotFoundException(label + " no existe o está inactivo"));
+    }
+
+    private void validateNoSurgeryOverlap(UUID veterinarianId, Instant start, Instant end, UUID excludeId) {
+        boolean hasOverlap = surgeryRecordRepository.findActiveNonTerminalByVeterinarianOrAssistant(veterinarianId).stream()
+                .filter(s -> excludeId == null || !s.getId().equals(excludeId))
+                .anyMatch(s -> {
+                    Instant existingStart = s.getSurgeryDate();
+                    Instant existingEnd = existingStart.plus(Duration.ofMinutes(
+                            s.getDurationMinutes() != null ? s.getDurationMinutes() : DEFAULT_DURATION_MINUTES));
+                    return start.isBefore(existingEnd) && existingStart.isBefore(end);
+                });
+        if (hasOverlap) {
+            throw new ConflictException("El veterinario ya tiene otra cirugía programada en ese horario");
+        }
     }
 
     private String validateSurgeryType(String surgeryType) {

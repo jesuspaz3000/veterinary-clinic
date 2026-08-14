@@ -81,12 +81,17 @@ export default function SurgeriesTable() {
     },
     {
       id: "date",
-      label: "Fecha",
-      minWidth: 140,
+      label: "Fecha de cirugía",
+      minWidth: 150,
       render: (row) => (
-        <Typography variant="body2" color="text.primary">
-          {dayjs(row.surgeryDate).format("DD/MM/YYYY HH:mm")}
-        </Typography>
+        <Box>
+          <Typography variant="body2" color="text.primary">
+            {dayjs(row.surgeryDate).format("DD/MM/YYYY HH:mm")}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Creado {dayjs(row.createdAt).format("DD/MM/YYYY HH:mm")}
+          </Typography>
+        </Box>
       ),
     },
     {
