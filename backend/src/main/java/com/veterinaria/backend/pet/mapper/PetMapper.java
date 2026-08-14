@@ -3,12 +3,15 @@ package com.veterinaria.backend.pet.mapper;
 import com.veterinaria.backend.common.storage.StorageService;
 import com.veterinaria.backend.owner.mapper.OwnerMapper;
 import com.veterinaria.backend.pet.dto.PetDTO;
+import com.veterinaria.backend.pet.dto.PetPhotoDTO;
 import com.veterinaria.backend.pet.model.Pet;
+import com.veterinaria.backend.pet.model.PetPhoto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Comparator;
 
 @Component
 @RequiredArgsConstructor
@@ -38,8 +41,23 @@ public class PetMapper {
                 .photoUrl(storageService.resolveUrl(pet.getPhotoUrl()))
                 .status(pet.getStatus())
                 .specialNotes(pet.getSpecialNotes())
+                .photos(pet.getPhotos().stream()
+                        .sorted(Comparator.comparing(PetPhoto::getUploadedAt))
+                        .map(this::toDTO)
+                        .toList())
                 .createdAt(pet.getCreatedAt())
                 .updatedAt(pet.getUpdatedAt())
+                .build();
+    }
+
+    public PetPhotoDTO toDTO(PetPhoto photo) {
+        if (photo == null) return null;
+
+        return PetPhotoDTO.builder()
+                .id(photo.getId())
+                .photoUrl(storageService.resolveUrl(photo.getPhotoUrl()))
+                .description(photo.getDescription())
+                .uploadedAt(photo.getUploadedAt())
                 .build();
     }
 

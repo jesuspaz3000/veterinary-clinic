@@ -5,6 +5,8 @@ import {
     PetRequest,
     PetCreateRequest,
     PetUpdateRequest,
+    PetPhotoResponse,
+    ClinicalHistoryEntry,
 } from "../type/petsTypes";
 
 function appendCommonFields(
@@ -108,5 +110,24 @@ export const PetService = {
 
     reactivatePet: async (id: string): Promise<void> => {
         await ApiService.post(`/pets/${id}/reactivate`);
+    },
+
+    addPetPhoto: async (petId: string, file: File, description?: string): Promise<PetPhotoResponse> => {
+        const form = new FormData();
+        form.append("file", file);
+        if (description && description.trim()) form.append("description", description.trim());
+        const response = await ApiService.post<PetPhotoResponse>(`/pets/${petId}/photos`, form, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+    },
+
+    deletePetPhoto: async (petId: string, photoId: string): Promise<void> => {
+        await ApiService.delete(`/pets/${petId}/photos/${photoId}`);
+    },
+
+    getClinicalHistory: async (petId: string): Promise<ClinicalHistoryEntry[]> => {
+        const response = await ApiService.get<ClinicalHistoryEntry[]>(`/pets/${petId}/clinical-history`);
+        return response.data;
     },
 };

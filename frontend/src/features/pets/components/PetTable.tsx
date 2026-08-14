@@ -22,11 +22,15 @@ import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import PhotoLibraryRoundedIcon from "@mui/icons-material/PhotoLibraryRounded";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import PetsIcon from "@mui/icons-material/Pets";
 import CreatePetDialog from "./CreatePetDialog";
 import EditPetDialog from "./EditPetDialog";
 import DeletePetDialog from "./DeletePetDialog";
 import ReactivatePetDialog from "./ReactivatePetDialog";
+import PetPhotosDialog from "./PetPhotosDialog";
+import ClinicalHistoryDialog from "./ClinicalHistoryDialog";
 
 export default function PetTable() {
   const { pets, loading, fetchPets, error } = usePets();
@@ -40,6 +44,8 @@ export default function PetTable() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedPet, setSelectedPet] = useState<PetResponse | null>(null);
 
   // Image preview state
@@ -224,6 +230,31 @@ export default function PetTable() {
                 <EditRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
+            <Tooltip title="Galería de Fotos">
+              <IconButton
+                size="small"
+                color="secondary"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setPhotosOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <PhotoLibraryRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Historial Clínico">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setHistoryOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <HistoryRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Desactivar Mascota">
               <IconButton
                 size="small"
@@ -240,6 +271,31 @@ export default function PetTable() {
           </Box>
         ) : (
           <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Galería de Fotos">
+              <IconButton
+                size="small"
+                color="secondary"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setPhotosOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <PhotoLibraryRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Historial Clínico">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setHistoryOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <HistoryRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Reactivar Mascota">
               <IconButton
                 size="small"
@@ -388,6 +444,29 @@ export default function PetTable() {
             setSelectedPet(null);
           }}
           onSuccess={refresh}
+        />
+      )}
+
+      {photosOpen && selectedPet && (
+        <PetPhotosDialog
+          open={photosOpen}
+          petId={selectedPet.id}
+          onClose={() => {
+            setPhotosOpen(false);
+            setSelectedPet(null);
+          }}
+          onChanged={refresh}
+        />
+      )}
+
+      {historyOpen && selectedPet && (
+        <ClinicalHistoryDialog
+          open={historyOpen}
+          pet={selectedPet}
+          onClose={() => {
+            setHistoryOpen(false);
+            setSelectedPet(null);
+          }}
         />
       )}
 

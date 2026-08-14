@@ -1,5 +1,6 @@
 package com.veterinaria.backend.pet.service.Impl;
 
+import com.veterinaria.backend.common.exception.BusinessException;
 import com.veterinaria.backend.common.exception.ConflictException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.common.storage.StorageFolder;
@@ -8,11 +9,15 @@ import com.veterinaria.backend.owner.model.Owner;
 import com.veterinaria.backend.owner.repository.OwnerRepository;
 import com.veterinaria.backend.pet.dto.CreatePetDTO;
 import com.veterinaria.backend.pet.dto.PetDTO;
+import com.veterinaria.backend.pet.dto.PetPhotoDTO;
 import com.veterinaria.backend.pet.dto.UpdatePetDTO;
 import com.veterinaria.backend.pet.mapper.PetMapper;
 import com.veterinaria.backend.pet.model.Pet;
+import com.veterinaria.backend.pet.model.PetPhoto;
 import com.veterinaria.backend.pet.repository.PetRepository;
 import com.veterinaria.backend.pet.service.PetService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -23,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +43,9 @@ public class PetServiceImpl implements PetService {
     private final OwnerRepository ownerRepository;
     private final PetMapper petMapper;
     private final StorageService storageService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -179,9 +188,57 @@ public class PetServiceImpl implements PetService {
         log.info("Pet reactivated: {}", id);
     }
 
+    @Override
+    @Transactional
+    public PetPhotoDTO addPhoto(UUID petId, MultipartFile file, String description) {
+        Pet pet = findPet(petId);
+
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("Debes adjuntar un archivo para la foto");
+        }
+
+        String storedPath = storageService.save(file, StorageFolder.PET_PHOTOS);
+        PetPhoto photo = PetPhoto.builder()
+                .pet(pet)
+                .photoUrl(storedPath)
+                .description(description != null && !description.trim().isEmpty() ? description.trim() : null)
+                .build();
+        pet.getPhotos().add(photo);
+        // pet ya está managed (viene de findById): usar flush() directo en vez de
+        // petRepository.saveAndFlush() evita un merge() innecesario, que cascadearía la
+        // persistencia de la foto nueva sobre una copia interna en vez de mutar esta
+        // misma instancia de "photo" (dejando su id/uploadedAt en null).
+        entityManager.flush();
+
+        return petMapper.toDTO(photo);
+    }
+
+    @Override
+    @Transactional
+    public void deletePhoto(UUID petId, UUID photoId) {
+        Pet pet = findPet(petId);
+        PetPhoto photo = pet.getPhotos().stream()
+                .filter(p -> p.getId().equals(photoId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Foto no encontrada"));
+
+        try {
+            storageService.delete(photo.getPhotoUrl());
+        } catch (Exception ignored) {
+            // El archivo puede no existir físicamente; la fila se elimina igual
+        }
+        pet.getPhotos().remove(photo);
+        petRepository.save(pet);
+    }
+
     ////////////////////////////////////////////////////////////////
     // Privados
     ////////////////////////////////////////////////////////////////
+
+    private Pet findPet(UUID id) {
+        return petRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Mascota no encontrada"));
+    }
 
     private Specification<Pet> buildSpecification(String search, UUID ownerId, String status) {
         Specification<Pet> spec = (root, query, cb) -> cb.conjunction();

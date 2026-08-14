@@ -1,9 +1,12 @@
 package com.veterinaria.backend.pet.controller;
 
+import com.veterinaria.backend.clinicalhistory.dto.ClinicalHistoryEntryDTO;
+import com.veterinaria.backend.clinicalhistory.service.ClinicalHistoryService;
 import com.veterinaria.backend.common.dto.MessageResponse;
 import com.veterinaria.backend.common.dto.PaginatedResponse;
 import com.veterinaria.backend.pet.dto.CreatePetDTO;
 import com.veterinaria.backend.pet.dto.PetDTO;
+import com.veterinaria.backend.pet.dto.PetPhotoDTO;
 import com.veterinaria.backend.pet.dto.UpdatePetDTO;
 import com.veterinaria.backend.pet.service.PetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +35,7 @@ import java.util.UUID;
 public class PetController {
 
     private final PetService petService;
+    private final ClinicalHistoryService clinicalHistoryService;
 
     @GetMapping
     @PreAuthorize("hasAuthority('PETS_READ') or hasAuthority('USERS_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -99,5 +104,31 @@ public class PetController {
     public ResponseEntity<MessageResponse> reactivatePet(@PathVariable UUID id) {
         petService.reactivatePet(id);
         return ResponseEntity.ok(new MessageResponse("Mascota reactivada exitosamente"));
+    }
+
+    @PostMapping(value = "/{id}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('PETS_UPDATE') or hasAuthority('USERS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Add pet photo", description = "Upload an additional photo to a pet's gallery")
+    public ResponseEntity<PetPhotoDTO> addPhoto(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String description
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(petService.addPhoto(id, file, description));
+    }
+
+    @GetMapping("/{id}/clinical-history")
+    @PreAuthorize("hasAuthority('PETS_READ') or hasAuthority('MEDICAL_RECORDS_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Get pet clinical history", description = "Get a unified, chronologically sorted timeline of a pet's appointments, medical records, vaccinations, deworming, surgeries and hospitalizations")
+    public ResponseEntity<List<ClinicalHistoryEntryDTO>> getClinicalHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(clinicalHistoryService.getClinicalHistory(id));
+    }
+
+    @DeleteMapping("/{id}/photos/{photoId}")
+    @PreAuthorize("hasAuthority('PETS_UPDATE') or hasAuthority('USERS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Remove pet photo", description = "Delete a photo from a pet's gallery")
+    public ResponseEntity<MessageResponse> deletePhoto(@PathVariable UUID id, @PathVariable UUID photoId) {
+        petService.deletePhoto(id, photoId);
+        return ResponseEntity.ok(new MessageResponse("Foto eliminada exitosamente"));
     }
 }

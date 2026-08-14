@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -31,6 +32,7 @@ public class PetDTO {
     private String photoUrl;
     private String status;
     private String specialNotes;
+    private List<PetPhotoDTO> photos;
     private Instant createdAt;
     private Instant updatedAt;
 }

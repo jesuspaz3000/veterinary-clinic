@@ -1,5 +1,12 @@
 import { OwnerResponse } from "@/features/owners/type/ownersTypes";
 
+export interface PetPhotoResponse {
+    id: string;
+    photoUrl: string;
+    description: string | null;
+    uploadedAt: string;
+}
+
 export interface PetResponse {
     id: string;
     owner: OwnerResponse;
@@ -16,8 +23,27 @@ export interface PetResponse {
     photoUrl: string | null;
     status: string;
     specialNotes: string | null;
+    photos: PetPhotoResponse[];
     createdAt: string;
     updatedAt: string;
+}
+
+export type ClinicalHistoryEntryType =
+    | "appointment"
+    | "medical_record"
+    | "vaccination"
+    | "deworming"
+    | "surgery"
+    | "hospitalization";
+
+export interface ClinicalHistoryEntry {
+    type: ClinicalHistoryEntryType;
+    id: string;
+    date: string;
+    title: string;
+    subtitle: string | null;
+    status: string | null;
+    description: string | null;
 }
 
 export const PET_STATUS_FILTERS = [

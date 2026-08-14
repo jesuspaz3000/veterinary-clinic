@@ -2,9 +2,11 @@ package com.veterinaria.backend.pet.service;
 
 import com.veterinaria.backend.pet.dto.CreatePetDTO;
 import com.veterinaria.backend.pet.dto.PetDTO;
+import com.veterinaria.backend.pet.dto.PetPhotoDTO;
 import com.veterinaria.backend.pet.dto.UpdatePetDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,4 +19,7 @@ public interface PetService {
     PetDTO updatePet(UUID id, UpdatePetDTO dto);
     void deletePet(UUID id);
     void reactivatePet(UUID id);
+
+    PetPhotoDTO addPhoto(UUID petId, MultipartFile file, String description);
+    void deletePhoto(UUID petId, UUID photoId);
 }
