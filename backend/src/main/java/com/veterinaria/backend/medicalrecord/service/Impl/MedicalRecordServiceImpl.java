@@ -24,6 +24,8 @@ import com.veterinaria.backend.product.model.Product;
 import com.veterinaria.backend.product.repository.ProductRepository;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
 import com.veterinaria.backend.veterinarian.repository.VeterinarianRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,6 +56,9 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
     private final ProductRepository productRepository;
     private final MedicalRecordMapper medicalRecordMapper;
     private final StorageService storageService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -148,7 +153,11 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
                 .description(description != null && !description.trim().isEmpty() ? description.trim() : null)
                 .build();
         record.getDocuments().add(document);
-        medicalRecordRepository.saveAndFlush(record);
+        // record ya está managed (viene de findRecord): usar flush() directo en vez de
+        // repository.saveAndFlush() evita un merge() innecesario, que cascadearía la
+        // persistencia del documento nuevo sobre una copia interna en vez de mutar esta
+        // misma instancia de "document" (dejando su id/uploadedAt en null).
+        entityManager.flush();
 
         return medicalRecordMapper.toDTO(document);
     }
