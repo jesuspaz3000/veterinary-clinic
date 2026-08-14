@@ -489,6 +489,7 @@ Table vaccination_record {
   next_dose_date date
   veterinarian_id UUID [not null]
   observations text
+  is_active boolean [not null, default: true] // eliminación lógica
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -521,6 +522,7 @@ Table deworming_record {
   veterinarian_id UUID [not null]
   deworming_type string [not null] // interna, externa, ambas
   observations text
+  is_active boolean [not null, default: true] // eliminación lógica
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -555,6 +557,7 @@ Table surgery_record {
   post_surgery_notes text
   complications text
   status string [default: 'programada'] // programada, en_proceso, completada, cancelada
+  is_active boolean [not null, default: true] // eliminación lógica
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -569,6 +572,65 @@ Ref: pets.id < surgery_record.pet_id [delete: cascade]
 Ref: medical_record.id < surgery_record.medical_record_id [delete: cascade]
 Ref: veterinarian.id < surgery_record.veterinarian_id [delete: restrict]
 Ref: veterinarian.id < surgery_record.assistant_veterinarian_id [delete: set null]
+
+////////////////////////////////////////////////////
+// MÓDULO: HOSPITALIZACIÓN
+////////////////////////////////////////////////////
+
+Table hospitalization_record {
+  id UUID [primary key]
+  pet_id UUID [not null]
+  medical_record_id UUID [not null]
+  admission_date timestamp [not null]
+  discharge_date timestamp
+  reason text [not null]
+  cage_number string
+  veterinarian_id UUID [not null]
+  status string [default: 'activo'] // activo, alta, transferido
+  final_diagnosis text
+  discharge_notes text
+  is_active boolean [not null, default: true] // eliminación lógica
+  created_at timestamp [not null]
+  updated_at timestamp
+
+  indexes {
+    pet_id
+    admission_date
+    status
+  }
+}
+
+Ref: pets.id < hospitalization_record.pet_id [delete: cascade]
+Ref: medical_record.id < hospitalization_record.medical_record_id [delete: cascade]
+Ref: veterinarian.id < hospitalization_record.veterinarian_id [delete: restrict]
+
+Table hospitalization_evolution {
+  id UUID [primary key]
+  hospitalization_record_id UUID [not null]
+  evolution_date timestamp [not null]
+  veterinarian_id UUID [not null]
+  weight decimal(5,2)
+  temperature decimal(4,2)
+  heart_rate integer
+  respiratory_rate integer
+  food_intake string    // bueno, regular, malo, no_comio
+  water_intake string
+  urination string      // normal, aumentada, disminuida, ausente
+  defecation string     // normal, diarrea, estreñimiento, ausente
+  activity_level string // activo, letargico, postrado
+  medication_administered text
+  procedures_performed text
+  observations text
+  created_at timestamp [not null]
+
+  indexes {
+    hospitalization_record_id
+    evolution_date
+  }
+}
+
+Ref: hospitalization_record.id < hospitalization_evolution.hospitalization_record_id [delete: cascade]
+Ref: veterinarian.id < hospitalization_evolution.veterinarian_id [delete: restrict]
 
 ////////////////////////////////////////////////////
 // MÓDULO: FACTURACIÓN Y VENTAS (POS)
@@ -702,61 +764,3 @@ Table pet_photo {
 }
 
 Ref: pets.id < pet_photo.pet_id [delete: cascade]
-
-////////////////////////////////////////////////////
-// [PLANEADO] MÓDULO: HOSPITALIZACIÓN
-////////////////////////////////////////////////////
-
-Table hospitalization_record {
-  id UUID [primary key]
-  pet_id UUID [not null]
-  medical_record_id UUID [not null]
-  admission_date timestamp [not null]
-  discharge_date timestamp
-  reason text [not null]
-  cage_number string
-  veterinarian_id UUID [not null]
-  status string [default: 'activo'] // activo, alta, transferido
-  final_diagnosis text
-  discharge_notes text
-  created_at timestamp [not null]
-  updated_at timestamp
-
-  indexes {
-    pet_id
-    admission_date
-    status
-  }
-}
-
-Ref: pets.id < hospitalization_record.pet_id [delete: cascade]
-Ref: medical_record.id < hospitalization_record.medical_record_id [delete: cascade]
-Ref: veterinarian.id < hospitalization_record.veterinarian_id [delete: restrict]
-
-Table hospitalization_evolution {
-  id UUID [primary key]
-  hospitalization_record_id UUID [not null]
-  evolution_date timestamp [not null]
-  veterinarian_id UUID [not null]
-  weight decimal(5,2)
-  temperature decimal(4,2)
-  heart_rate integer
-  respiratory_rate integer
-  food_intake string    // bueno, regular, malo, no_comio
-  water_intake string
-  urination string      // normal, aumentada, disminuida, ausente
-  defecation string     // normal, diarrea, estreñimiento, ausente
-  activity_level string // activo, letargico, postrado
-  medication_administered text
-  procedures_performed text
-  observations text
-  created_at timestamp [not null]
-
-  indexes {
-    hospitalization_record_id
-    evolution_date
-  }
-}
-
-Ref: hospitalization_record.id < hospitalization_evolution.hospitalization_record_id [delete: cascade]
-Ref: veterinarian.id < hospitalization_evolution.veterinarian_id [delete: restrict]
