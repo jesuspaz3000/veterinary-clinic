@@ -10,11 +10,12 @@ import java.util.List;
 import java.util.UUID;
 
 public interface VeterinarianService {
-    List<VeterinarianDTO> getAllVeterinarians(String search);
-    Page<VeterinarianDTO> getAllVeterinariansPaginated(String search, Pageable pageable);
+    List<VeterinarianDTO> getAllVeterinarians(String search, String status);
+    Page<VeterinarianDTO> getAllVeterinariansPaginated(String search, String status, Pageable pageable);
     VeterinarianDTO getVeterinarianById(UUID id);
 
     VeterinarianDTO createVeterinarian(CreateVeterinarianDTO dto);
     VeterinarianDTO updateVeterinarian(UUID id, UpdateVeterinarianDTO dto);
     void deleteVeterinarian(UUID id);
+    void reactivateVeterinarian(UUID id);
 }

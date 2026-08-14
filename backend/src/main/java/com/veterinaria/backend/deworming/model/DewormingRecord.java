@@ -69,6 +69,10 @@ public class DewormingRecord {
     @Column(columnDefinition = "TEXT")
     private String observations;
 
+    @Builder.Default
+    @Column(name = "is_active", nullable = false, columnDefinition = "boolean not null default true")
+    private Boolean isActive = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

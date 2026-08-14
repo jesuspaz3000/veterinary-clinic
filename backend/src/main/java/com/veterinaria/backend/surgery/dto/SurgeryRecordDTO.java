@@ -29,6 +29,7 @@ public class SurgeryRecordDTO {
     private String postSurgeryNotes;
     private String complications;
     private String status;
+    private Boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
 }

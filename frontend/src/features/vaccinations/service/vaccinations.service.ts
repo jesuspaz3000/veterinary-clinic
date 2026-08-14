@@ -40,4 +40,8 @@ export const VaccinationsService = {
     deleteVaccinationRecord: async (id: string): Promise<void> => {
         await ApiService.delete(`/vaccinations/${id}`);
     },
+
+    reactivateVaccinationRecord: async (id: string): Promise<void> => {
+        await ApiService.post(`/vaccinations/${id}/reactivate`);
+    },
 };

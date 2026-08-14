@@ -42,13 +42,14 @@ public class SurgeryRecordController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false) String activeStatus,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         int pageNumber = limit > 0 ? offset / limit : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.DESC, "surgeryDate"));
         Page<SurgeryRecordDTO> pageResult = surgeryRecordService.getAllSurgeryRecordsPaginated(
-                petId, veterinarianId, surgeryType, status, from, to, pageRequest);
+                petId, veterinarianId, surgeryType, status, from, to, activeStatus, pageRequest);
 
         return ResponseEntity.ok(PaginatedResponse.<SurgeryRecordDTO>builder()
                 .count(pageResult.getTotalElements())
@@ -85,5 +86,13 @@ public class SurgeryRecordController {
     public ResponseEntity<MessageResponse> deleteSurgeryRecord(@PathVariable UUID id) {
         surgeryRecordService.deleteSurgeryRecord(id);
         return ResponseEntity.ok(new MessageResponse("Registro de cirugía eliminado exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('SURGERIES_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate surgery record", description = "Reactivate a previously deactivated surgery record")
+    public ResponseEntity<MessageResponse> reactivateSurgeryRecord(@PathVariable UUID id) {
+        surgeryRecordService.reactivateSurgeryRecord(id);
+        return ResponseEntity.ok(new MessageResponse("Registro de cirugía reactivado exitosamente"));
     }
 }

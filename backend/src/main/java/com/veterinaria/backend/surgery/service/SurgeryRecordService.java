@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface SurgeryRecordService {
 
     Page<SurgeryRecordDTO> getAllSurgeryRecordsPaginated(UUID petId, UUID veterinarianId, String surgeryType,
-            String status, Instant from, Instant to, Pageable pageable);
+            String status, Instant from, Instant to, String activeStatus, Pageable pageable);
 
     SurgeryRecordDTO getSurgeryRecordById(UUID id);
 
@@ -21,4 +21,6 @@ public interface SurgeryRecordService {
     SurgeryRecordDTO updateSurgeryRecord(UUID id, UpdateSurgeryRecordDTO dto);
 
     void deleteSurgeryRecord(UUID id);
+
+    void reactivateSurgeryRecord(UUID id);
 }

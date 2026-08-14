@@ -11,9 +11,10 @@ import java.util.UUID;
 
 public interface OwnerService {
     List<OwnerDTO> getAllOwners(String search);
-    Page<OwnerDTO> getAllOwnersPaginated(String search, Pageable pageable);
+    Page<OwnerDTO> getAllOwnersPaginated(String search, String status, Pageable pageable);
     OwnerDTO getOwnerById(UUID id);
     OwnerDTO createOwner(CreateOwnerDTO dto);
     OwnerDTO updateOwner(UUID id, UpdateOwnerDTO dto);
     void deleteOwner(UUID id);
+    void reactivateOwner(UUID id);
 }

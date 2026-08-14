@@ -28,6 +28,7 @@ public class VaccinationRecordDTO {
     private LocalDate applicationDate;
     private LocalDate nextDoseDate;
     private String observations;
+    private Boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
 }

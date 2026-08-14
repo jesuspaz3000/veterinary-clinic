@@ -21,5 +21,8 @@ export const RolesService = {
     },
     deleteRole: async (id: string): Promise<void> => {
         await ApiService.delete(`/roles/${id}`);
+    },
+    reactivateRole: async (id: string): Promise<void> => {
+        await ApiService.post(`/roles/${id}/reactivate`);
     }
 }

@@ -15,10 +15,17 @@ export interface UserResponse {
     updatedAt: string;
 }
 
+export const USER_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface UserRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }
 
 export interface UserCreateRequest {

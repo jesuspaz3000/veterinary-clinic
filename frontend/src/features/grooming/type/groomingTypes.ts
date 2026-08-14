@@ -12,10 +12,17 @@ export interface GroomingStaffResponse {
     updatedAt: string;
 }
 
+export const GROOMING_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface GroomingStaffRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }
 
 export interface GroomingStaffCreateRequest {

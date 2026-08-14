@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useGroomingStaff } from "../hooks/groomingHooks";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
-import { GroomingStaffResponse } from "../type/groomingTypes";
+import { GROOMING_STATUS_FILTERS, GroomingStaffResponse } from "../type/groomingTypes";
 import {
   Box,
   TextField,
+  MenuItem,
   InputAdornment,
   Chip,
   IconButton,
@@ -18,11 +19,13 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import CreateGroomingStaff from "./CreateGroomingStaff";
 import EditGroomingStaff from "./EditGroomingStaff";
 import DeleteGroomingStaff from "./DeleteGroomingStaff";
+import ReactivateGroomingStaff from "./ReactivateGroomingStaff";
 import ManageGroomingSpecialtiesDialog from "./ManageGroomingSpecialtiesDialog";
 
 export default function GroomingTable() {
@@ -30,21 +33,28 @@ export default function GroomingTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [manageSpecialtiesOpen, setManageSpecialtiesOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<GroomingStaffResponse | null>(null);
 
-  useEffect(() => {
-    fetchGroomingStaff({
+  const refresh = () =>
+    void fetchGroomingStaff({
       limit: rowsPerPage,
       offset: page * rowsPerPage,
       search: search.trim() || undefined,
+      status: statusFilter,
     });
-  }, [page, rowsPerPage, search, fetchGroomingStaff]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, search, statusFilter, fetchGroomingStaff]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -188,36 +198,55 @@ export default function GroomingTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Personal">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedStaff(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Desactivar Personal">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedStaff(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      render: (row) => {
+        const isActivo = row.status?.toLowerCase() === "activo" && row.user.isActive;
+        return isActivo ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Editar Personal">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setEditOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Desactivar Personal">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setDeleteOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <DeleteRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Reactivar Personal">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        );
+      },
     },
   ];
 
@@ -233,29 +262,49 @@ export default function GroomingTable() {
           gap: 2,
         }}
       >
-        <TextField
-          placeholder="Buscar por nombre, usuario, correo o especialidad..."
-          value={search}
-          onChange={handleSearchChange}
-          size="small"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: { xs: "100%", md: "38%" },
-            maxWidth: 400,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-            },
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+          <TextField
+            placeholder="Buscar por nombre, usuario, correo o especialidad..."
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              width: { xs: "100%", md: "38%" },
+              maxWidth: 400,
+              flexGrow: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {GROOMING_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
@@ -306,13 +355,7 @@ export default function GroomingTable() {
         <CreateGroomingStaff
           open={createOpen}
           onClose={() => setCreateOpen(false)}
-          onSuccess={() =>
-            void fetchGroomingStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -325,13 +368,7 @@ export default function GroomingTable() {
             setEditOpen(false);
             setSelectedStaff(null);
           }}
-          onSuccess={() =>
-            void fetchGroomingStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -343,13 +380,19 @@ export default function GroomingTable() {
             setDeleteOpen(false);
             setSelectedStaff(null);
           }}
-          onSuccess={() =>
-            void fetchGroomingStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedStaff && (
+        <ReactivateGroomingStaff
+          open={reactivateOpen}
+          staff={selectedStaff}
+          onClose={() => {
+            setReactivateOpen(false);
+            setSelectedStaff(null);
+          }}
+          onSuccess={refresh}
         />
       )}
 
@@ -357,13 +400,7 @@ export default function GroomingTable() {
         <ManageGroomingSpecialtiesDialog
           open={manageSpecialtiesOpen}
           onClose={() => setManageSpecialtiesOpen(false)}
-          onSpecialtyChange={() =>
-            void fetchGroomingStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSpecialtyChange={refresh}
         />
       )}
     </Box>

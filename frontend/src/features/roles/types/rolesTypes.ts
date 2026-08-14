@@ -28,8 +28,15 @@ export interface RoleCreateUpdateDTO {
     permissionIds: string[];
 }
 
+export const ROLE_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface RoleRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }

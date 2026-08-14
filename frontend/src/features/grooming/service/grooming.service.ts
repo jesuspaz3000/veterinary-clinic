@@ -93,4 +93,8 @@ export const GroomingService = {
     deleteGroomingStaff: async (id: string): Promise<void> => {
         await ApiService.delete(`/grooming-staff/${id}`);
     },
+
+    reactivateGroomingStaff: async (id: string): Promise<void> => {
+        await ApiService.post(`/grooming-staff/${id}/reactivate`);
+    },
 };

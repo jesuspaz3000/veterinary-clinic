@@ -4,6 +4,7 @@ import com.veterinaria.backend.administrative.model.AdministrativeStaff;
 import com.veterinaria.backend.administrative.repository.AdministrativeStaffRepository;
 import com.veterinaria.backend.common.constants.RoleNames;
 import com.veterinaria.backend.user.event.UserDeactivatedEvent;
+import com.veterinaria.backend.user.event.UserReactivatedEvent;
 import com.veterinaria.backend.user.event.UserRoleChangedEvent;
 import com.veterinaria.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,5 +43,11 @@ public class AdministrativeStaffUserEventListener {
     public void onUserDeactivated(UserDeactivatedEvent event) {
         administrativeStaffRepository.findByUserId(event.userId()).ifPresent(staff ->
                 log.info("Administrative staff associated with deactivated user {}", event.userId()));
+    }
+
+    @EventListener
+    public void onUserReactivated(UserReactivatedEvent event) {
+        administrativeStaffRepository.findByUserId(event.userId()).ifPresent(staff ->
+                log.info("Administrative staff associated with reactivated user {}", event.userId()));
     }
 }

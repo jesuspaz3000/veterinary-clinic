@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useUsers } from "../hooks/usersHooks";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
-import { UserResponse } from "../type/usersTypes";
+import { USER_STATUS_FILTERS, UserResponse } from "../type/usersTypes";
 import {
   Box,
   TextField,
+  MenuItem,
   InputAdornment,
   Chip,
   IconButton,
@@ -19,33 +20,42 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CreateUser from "./CreateUser";
 import EditUser from "./EditUser";
 import DeleteUser from "./DeleteUser";
+import ReactivateUser from "./ReactivateUser";
 
 export default function UsersTable() {
   const { users, loading, fetchUsers, error } = useUsers();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
 
   // Image Preview
   const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
 
-  useEffect(() => {
+  const refresh = () =>
     void fetchUsers({
       limit: rowsPerPage,
       offset: page * rowsPerPage,
       search: search.trim() || undefined,
+      status: statusFilter,
     });
-  }, [page, rowsPerPage, search, fetchUsers]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, search, statusFilter, fetchUsers]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -159,36 +169,53 @@ export default function UsersTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Usuario">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedUser(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Desactivar Usuario">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedUser(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      render: (row) =>
+        row.isActive ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Editar Usuario">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedUser(row);
+                  setEditOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Desactivar Usuario">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedUser(row);
+                  setDeleteOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <DeleteRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Reactivar Usuario">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedUser(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
     },
   ];
 
@@ -204,29 +231,49 @@ export default function UsersTable() {
           gap: 2,
         }}
       >
-        <TextField
-          placeholder="Buscar por usuario, correo, nombre o rol..."
-          value={search}
-          onChange={handleSearchChange}
-          size="small"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: { xs: "100%", md: "40%" },
-            maxWidth: 450,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-            },
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+          <TextField
+            placeholder="Buscar por usuario, correo, nombre o rol..."
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              width: { xs: "100%", md: "40%" },
+              maxWidth: 450,
+              flexGrow: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {USER_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
@@ -264,13 +311,7 @@ export default function UsersTable() {
         <CreateUser
           open={createOpen}
           onClose={() => setCreateOpen(false)}
-          onSuccess={() =>
-            void fetchUsers({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -283,13 +324,19 @@ export default function UsersTable() {
             setEditOpen(false);
             setSelectedUser(null);
           }}
-          onSuccess={() =>
-            void fetchUsers({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedUser && (
+        <ReactivateUser
+          open={reactivateOpen}
+          user={selectedUser}
+          onClose={() => {
+            setReactivateOpen(false);
+            setSelectedUser(null);
+          }}
+          onSuccess={refresh}
         />
       )}
 
@@ -301,13 +348,7 @@ export default function UsersTable() {
             setDeleteOpen(false);
             setSelectedUser(null);
           }}
-          onSuccess={() =>
-            void fetchUsers({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 

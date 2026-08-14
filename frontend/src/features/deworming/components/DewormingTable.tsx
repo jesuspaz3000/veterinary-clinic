@@ -15,9 +15,10 @@ import {
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
 import { useDeworming } from "../hooks/useDeworming";
-import { DewormingRecordResponse, DEWORMING_TYPES, DEWORMING_TYPE_LABELS } from "../type/dewormingTypes";
+import { DewormingRecordResponse, DEWORMING_TYPES, DEWORMING_TYPE_LABELS, DEWORMING_STATUS_FILTERS } from "../type/dewormingTypes";
 import { DewormingTypeChip, DewormingDoseStatusChip } from "./DewormingChips";
 import { PetService } from "@/features/pets/service/pets.service";
 import { PetResponse } from "@/features/pets/type/petsTypes";
@@ -26,6 +27,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { PERMISSIONS } from "@/shared/config/permissions";
 import DewormingFormDialog from "./DewormingFormDialog";
 import DeleteDewormingDialog from "./DeleteDewormingDialog";
+import ReactivateDewormingDialog from "./ReactivateDewormingDialog";
 
 const DOSE_FILTERS = [
   { value: "", label: "Todas" },
@@ -46,10 +48,12 @@ export default function DewormingTable() {
   const [petFilter, setPetFilter] = useState<PetResponse | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [doseFilter, setDoseFilter] = useState<(typeof DOSE_FILTERS)[number]["value"]>("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<DewormingRecordResponse | null>(null);
 
   useEffect(() => {
@@ -72,13 +76,14 @@ export default function DewormingTable() {
           : doseFilter === "overdue"
             ? dayjs().subtract(1, "day").format("YYYY-MM-DD")
             : undefined,
+      status: statusFilter,
     };
   };
 
   useEffect(() => {
     void fetchRecords(buildParams());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, petFilter, typeFilter, doseFilter, fetchRecords]);
+  }, [page, rowsPerPage, petFilter, typeFilter, doseFilter, statusFilter, fetchRecords]);
 
   const refresh = () => void fetchRecords(buildParams());
 
@@ -165,40 +170,59 @@ export default function DewormingTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          {canUpdate && (
-            <Tooltip title="Editar registro">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => {
-                  setSelectedRecord(row);
-                  setEditOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Eliminar registro">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => {
-                  setSelectedRecord(row);
-                  setDeleteOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <DeleteRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      ),
+      render: (row) =>
+        row.isActive ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            {canUpdate && (
+              <Tooltip title="Editar registro">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setEditOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title="Eliminar registro">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setDeleteOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <DeleteRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            {canUpdate && (
+              <Tooltip title="Reactivar registro">
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setReactivateOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <RestoreRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        ),
     },
   ];
 
@@ -266,6 +290,23 @@ export default function DewormingTable() {
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {DEWORMING_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
         </Box>
 
         {canCreate && (
@@ -319,6 +360,18 @@ export default function DewormingTable() {
           record={selectedRecord}
           onClose={() => {
             setDeleteOpen(false);
+            setSelectedRecord(null);
+          }}
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedRecord && (
+        <ReactivateDewormingDialog
+          open
+          record={selectedRecord}
+          onClose={() => {
+            setReactivateOpen(false);
             setSelectedRecord(null);
           }}
           onSuccess={refresh}

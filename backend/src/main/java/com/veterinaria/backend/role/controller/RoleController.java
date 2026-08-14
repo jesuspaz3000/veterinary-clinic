@@ -39,13 +39,14 @@ public class RoleController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             HttpServletRequest request){
 
         if(limit != null && offset != null){
             PaginationValidator.validatePaginationParams(limit, offset);
             int page = (offset + limit - 1) / limit;
             Pageable pageable = PageRequest.of(page, limit, Sort.by("id").ascending());
-            Page<RoleDTO> rolesPage = roleService.getAllRolesPaginated(search, pageable);
+            Page<RoleDTO> rolesPage = roleService.getAllRolesPaginated(search, status, pageable);
             PaginatedResponse<RoleDTO> response = PaginationValidator.buildPaginatedResponse(
                     rolesPage,
                     limit,
@@ -55,7 +56,7 @@ public class RoleController {
             );
             return ResponseEntity.ok(response);
         } else {
-            List<RoleDTO> roles = roleService.getAllRoles(search);
+            List<RoleDTO> roles = roleService.getAllRoles(search, status);
             PaginatedResponse<RoleDTO> response = PaginatedResponse.<RoleDTO>builder()
                     .count((long) roles.size())
                     .next(null)
@@ -96,5 +97,13 @@ public class RoleController {
     public ResponseEntity<MessageResponse> deleteRole(@PathVariable UUID id){
         roleService.deleteRole(id);
         return ResponseEntity.ok(new MessageResponse("Role deleted successfully"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('ROLES_UPDATE')")
+    @Operation(summary = "Reactivate a role", description = "Reactivate a previously deactivated role")
+    public ResponseEntity<MessageResponse> reactivateRole(@PathVariable UUID id){
+        roleService.reactivateRole(id);
+        return ResponseEntity.ok(new MessageResponse("Role reactivated successfully"));
     }
 }

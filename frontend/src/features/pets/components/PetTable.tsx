@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { usePets } from "../hooks/usePets";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
-import { PetResponse } from "../type/petsTypes";
+import { PET_STATUS_FILTERS, PetResponse } from "../type/petsTypes";
 import {
   Box,
   TextField,
+  MenuItem,
   InputAdornment,
   Chip,
   IconButton,
@@ -19,34 +20,43 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import PetsIcon from "@mui/icons-material/Pets";
 import CreatePetDialog from "./CreatePetDialog";
 import EditPetDialog from "./EditPetDialog";
 import DeletePetDialog from "./DeletePetDialog";
+import ReactivatePetDialog from "./ReactivatePetDialog";
 
 export default function PetTable() {
   const { pets, loading, fetchPets, error } = usePets();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedPet, setSelectedPet] = useState<PetResponse | null>(null);
 
   // Image preview state
   const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
 
-  useEffect(() => {
+  const refresh = () =>
     void fetchPets({
       limit: rowsPerPage,
       offset: page * rowsPerPage,
       search: search.trim() || undefined,
+      status: statusFilter,
     });
-  }, [page, rowsPerPage, search, fetchPets]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, search, statusFilter, fetchPets]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -185,7 +195,7 @@ export default function PetTable() {
         const isActive = row.status === "activo";
         return (
           <Chip
-            label={isActive ? "Activo" : row.status}
+            label={isActive ? "Activo" : row.status === "inactivo" ? "Inactivo" : row.status}
             size="small"
             color={isActive ? "success" : "default"}
             sx={{ fontWeight: 600, borderRadius: "6px" }}
@@ -196,38 +206,55 @@ export default function PetTable() {
     {
       id: "actions",
       label: "Acciones",
-      minWidth: 110,
+      minWidth: 150,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Mascota">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedPet(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Desactivar Mascota">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedPet(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      render: (row) =>
+        row.status === "activo" ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Editar Mascota">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setEditOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Desactivar Mascota">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setDeleteOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <DeleteRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Reactivar Mascota">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedPet(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
     },
   ];
 
@@ -243,29 +270,49 @@ export default function PetTable() {
           gap: 2,
         }}
       >
-        <TextField
-          placeholder="Buscar por nombre, especie, raza, microchip o dueño..."
-          value={search}
-          onChange={handleSearchChange}
-          size="small"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: { xs: "100%", md: "40%" },
-            maxWidth: 450,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-            },
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+          <TextField
+            placeholder="Buscar por nombre, especie, raza, microchip o dueño..."
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              width: { xs: "100%", md: "40%" },
+              maxWidth: 450,
+              flexGrow: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {PET_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
@@ -303,13 +350,7 @@ export default function PetTable() {
         <CreatePetDialog
           open={createOpen}
           onClose={() => setCreateOpen(false)}
-          onSuccess={() =>
-            void fetchPets({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -322,13 +363,19 @@ export default function PetTable() {
             setEditOpen(false);
             setSelectedPet(null);
           }}
-          onSuccess={() =>
-            void fetchPets({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedPet && (
+        <ReactivatePetDialog
+          open={reactivateOpen}
+          pet={selectedPet}
+          onClose={() => {
+            setReactivateOpen(false);
+            setSelectedPet(null);
+          }}
+          onSuccess={refresh}
         />
       )}
 
@@ -340,13 +387,7 @@ export default function PetTable() {
             setDeleteOpen(false);
             setSelectedPet(null);
           }}
-          onSuccess={() =>
-            void fetchPets({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 

@@ -32,6 +32,7 @@ public class SurgeryRecordMapper {
                 .postSurgeryNotes(record.getPostSurgeryNotes())
                 .complications(record.getComplications())
                 .status(record.getStatus())
+                .isActive(record.getIsActive())
                 .createdAt(record.getCreatedAt())
                 .updatedAt(record.getUpdatedAt())
                 .build();

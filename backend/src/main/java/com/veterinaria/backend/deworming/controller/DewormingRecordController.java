@@ -43,13 +43,14 @@ public class DewormingRecordController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicationTo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate nextApplicationFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate nextApplicationTo,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         int pageNumber = limit > 0 ? offset / limit : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.DESC, "applicationDate"));
         Page<DewormingRecordDTO> pageResult = dewormingRecordService.getAllDewormingRecordsPaginated(
-                petId, veterinarianId, dewormingType, applicationFrom, applicationTo, nextApplicationFrom, nextApplicationTo, pageRequest);
+                petId, veterinarianId, dewormingType, applicationFrom, applicationTo, nextApplicationFrom, nextApplicationTo, status, pageRequest);
 
         return ResponseEntity.ok(PaginatedResponse.<DewormingRecordDTO>builder()
                 .count(pageResult.getTotalElements())
@@ -86,5 +87,13 @@ public class DewormingRecordController {
     public ResponseEntity<MessageResponse> deleteDewormingRecord(@PathVariable UUID id) {
         dewormingRecordService.deleteDewormingRecord(id);
         return ResponseEntity.ok(new MessageResponse("Registro de desparasitación eliminado exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('DEWORMING_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate deworming record", description = "Reactivate a previously deactivated deworming record")
+    public ResponseEntity<MessageResponse> reactivateDewormingRecord(@PathVariable UUID id) {
+        dewormingRecordService.reactivateDewormingRecord(id);
+        return ResponseEntity.ok(new MessageResponse("Registro de desparasitación reactivado exitosamente"));
     }
 }

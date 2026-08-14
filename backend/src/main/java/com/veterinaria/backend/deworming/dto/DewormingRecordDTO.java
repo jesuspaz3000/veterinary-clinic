@@ -28,6 +28,7 @@ public class DewormingRecordDTO {
     private LocalDate nextApplicationDate;
     private String dewormingType;
     private String observations;
+    private Boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
 }

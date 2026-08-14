@@ -88,4 +88,8 @@ export const AdministrativeService = {
     deleteAdministrativeStaff: async (id: string): Promise<void> => {
         await ApiService.delete(`/administrative-staff/${id}`);
     },
+
+    reactivateAdministrativeStaff: async (id: string): Promise<void> => {
+        await ApiService.post(`/administrative-staff/${id}/reactivate`);
+    },
 };

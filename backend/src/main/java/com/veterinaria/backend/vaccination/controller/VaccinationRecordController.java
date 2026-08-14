@@ -42,13 +42,14 @@ public class VaccinationRecordController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate applicationTo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate nextDoseFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate nextDoseTo,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         int pageNumber = limit > 0 ? offset / limit : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.DESC, "applicationDate"));
         Page<VaccinationRecordDTO> pageResult = vaccinationRecordService.getAllVaccinationRecordsPaginated(
-                petId, veterinarianId, applicationFrom, applicationTo, nextDoseFrom, nextDoseTo, pageRequest);
+                petId, veterinarianId, applicationFrom, applicationTo, nextDoseFrom, nextDoseTo, status, pageRequest);
 
         return ResponseEntity.ok(PaginatedResponse.<VaccinationRecordDTO>builder()
                 .count(pageResult.getTotalElements())
@@ -85,5 +86,13 @@ public class VaccinationRecordController {
     public ResponseEntity<MessageResponse> deleteVaccinationRecord(@PathVariable UUID id) {
         vaccinationRecordService.deleteVaccinationRecord(id);
         return ResponseEntity.ok(new MessageResponse("Registro de vacunación eliminado exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('VACCINATIONS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate vaccination record", description = "Reactivate a previously deactivated vaccination record")
+    public ResponseEntity<MessageResponse> reactivateVaccinationRecord(@PathVariable UUID id) {
+        vaccinationRecordService.reactivateVaccinationRecord(id);
+        return ResponseEntity.ok(new MessageResponse("Registro de vacunación reactivado exitosamente"));
     }
 }

@@ -52,6 +52,9 @@ export const UsersService = {
     deleteUser: async (id: string): Promise<void> => {
         await ApiService.delete(`/users/${id}`);
     },
+    reactivateUser: async (id: string): Promise<void> => {
+        await ApiService.post(`/users/${id}/reactivate`);
+    },
     resetUserPassword: async(id: string, request: UserResetPassword): Promise<void> => {
         await ApiService.put(`/users/${id}/reset-password`, request);
     }

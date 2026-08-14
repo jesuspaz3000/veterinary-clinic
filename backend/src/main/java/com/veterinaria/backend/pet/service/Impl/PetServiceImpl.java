@@ -13,13 +13,18 @@ import com.veterinaria.backend.pet.mapper.PetMapper;
 import com.veterinaria.backend.pet.model.Pet;
 import com.veterinaria.backend.pet.repository.PetRepository;
 import com.veterinaria.backend.pet.service.PetService;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,16 +58,8 @@ public class PetServiceImpl implements PetService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PetDTO> getAllPetsPaginated(String search, UUID ownerId, Pageable pageable) {
-        if (ownerId != null) {
-            return petRepository.findByOwnerIdPaginated(ownerId, pageable)
-                    .map(petMapper::toDTO);
-        }
-        if (search == null || search.trim().isEmpty()) {
-            return petRepository.findAllActivePaginated(pageable)
-                    .map(petMapper::toDTO);
-        }
-        return petRepository.searchActive(search.trim(), pageable)
+    public Page<PetDTO> getAllPetsPaginated(String search, UUID ownerId, String status, Pageable pageable) {
+        return petRepository.findAll(buildSpecification(search, ownerId, status), pageable)
                 .map(petMapper::toDTO);
     }
 
@@ -169,5 +166,56 @@ public class PetServiceImpl implements PetService {
         pet.setStatus("inactivo");
         petRepository.saveAndFlush(pet);
         log.info("Pet deactivated: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public void reactivatePet(UUID id) {
+        Pet pet = petRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Mascota no encontrada"));
+
+        pet.setStatus("activo");
+        petRepository.saveAndFlush(pet);
+        log.info("Pet reactivated: {}", id);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<Pet> buildSpecification(String search, UUID ownerId, String status) {
+        Specification<Pet> spec = (root, query, cb) -> cb.conjunction();
+
+        if (ownerId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("owner").get("id"), ownerId));
+        }
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan mascotas activas
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), "activo"));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            String normalizedStatus = status.trim().toLowerCase();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), normalizedStatus));
+        }
+        // status == "todos": sin filtro de estado, se listan todas
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> {
+                query.distinct(true);
+                Join<Pet, Owner> owner = root.join("owner", JoinType.LEFT);
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(cb.lower(root.get("name")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("species")), pattern));
+                predicates.add(cb.like(cb.lower(cb.coalesce(root.get("breed"), "")), pattern));
+                predicates.add(cb.like(cb.lower(cb.coalesce(root.get("microchipNumber"), "")), pattern));
+                predicates.add(cb.like(cb.lower(owner.get("firstName")), pattern));
+                predicates.add(cb.like(cb.lower(owner.get("lastName")), pattern));
+                predicates.add(cb.like(cb.lower(cb.coalesce(owner.get("documentNumber"), "")), pattern));
+                return cb.or(predicates.toArray(new Predicate[0]));
+            });
+        }
+
+        return spec;
     }
 }

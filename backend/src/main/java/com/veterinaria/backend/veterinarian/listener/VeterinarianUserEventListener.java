@@ -2,6 +2,7 @@ package com.veterinaria.backend.veterinarian.listener;
 
 import com.veterinaria.backend.common.constants.RoleNames;
 import com.veterinaria.backend.user.event.UserDeactivatedEvent;
+import com.veterinaria.backend.user.event.UserReactivatedEvent;
 import com.veterinaria.backend.user.event.UserRoleChangedEvent;
 import com.veterinaria.backend.user.repository.UserRepository;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
@@ -50,6 +51,14 @@ public class VeterinarianUserEventListener {
     public void onUserDeactivated(UserDeactivatedEvent event) {
         veterinarianRepository.findByUserId(event.userId()).ifPresent(vet -> {
             vet.setStatus("inactivo");
+            veterinarianRepository.saveAndFlush(vet);
+        });
+    }
+
+    @EventListener
+    public void onUserReactivated(UserReactivatedEvent event) {
+        veterinarianRepository.findByUserId(event.userId()).ifPresent(vet -> {
+            vet.setStatus("activo");
             veterinarianRepository.saveAndFlush(vet);
         });
     }

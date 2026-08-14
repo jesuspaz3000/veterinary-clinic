@@ -41,12 +41,13 @@ public class GroomingStaffController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
         if (limit != null) {
             int effectiveOffset = offset != null ? offset : 0;
             Pageable pageable = PaginationValidator.getPageable(limit, effectiveOffset, Sort.by("createdAt").descending());
-            Page<GroomingStaffDTO> pageResult = groomingStaffService.getAllGroomingStaffPaginated(search, pageable);
+            Page<GroomingStaffDTO> pageResult = groomingStaffService.getAllGroomingStaffPaginated(search, status, pageable);
             PaginatedResponse<GroomingStaffDTO> response = PaginationValidator.buildPaginatedResponse(
                     pageResult,
                     limit,
@@ -56,7 +57,7 @@ public class GroomingStaffController {
             );
             return ResponseEntity.ok(response);
         } else {
-            List<GroomingStaffDTO> staff = groomingStaffService.getAllGroomingStaff(search);
+            List<GroomingStaffDTO> staff = groomingStaffService.getAllGroomingStaff(search, status);
             PaginatedResponse<GroomingStaffDTO> response = PaginatedResponse.<GroomingStaffDTO>builder()
                     .count((long) staff.size())
                     .next(null)
@@ -97,5 +98,13 @@ public class GroomingStaffController {
     public ResponseEntity<MessageResponse> deleteGroomingStaff(@PathVariable UUID id) {
         groomingStaffService.deleteGroomingStaff(id);
         return ResponseEntity.ok(new MessageResponse("Grooming staff member deactivated successfully"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('GROOMING_UPDATE')")
+    @Operation(summary = "Reactivate grooming staff", description = "Reactivate a previously deactivated grooming staff member")
+    public ResponseEntity<MessageResponse> reactivateGroomingStaff(@PathVariable UUID id) {
+        groomingStaffService.reactivateGroomingStaff(id);
+        return ResponseEntity.ok(new MessageResponse("Grooming staff member reactivated successfully"));
     }
 }

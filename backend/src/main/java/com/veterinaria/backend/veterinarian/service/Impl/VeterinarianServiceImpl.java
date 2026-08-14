@@ -18,14 +18,19 @@ import com.veterinaria.backend.veterinarian.mapper.VeterinarianMapper;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
 import com.veterinaria.backend.veterinarian.repository.VeterinarianRepository;
 import com.veterinaria.backend.veterinarian.service.VeterinarianService;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,25 +50,16 @@ public class VeterinarianServiceImpl implements VeterinarianService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VeterinarianDTO> getAllVeterinarians(String search) {
-        if (search == null || search.trim().isEmpty()) {
-            return veterinarianRepository.findAll().stream()
-                    .map(veterinarianMapper::toDTO)
-                    .toList();
-        }
-        return veterinarianRepository.searchList(search).stream()
+    public List<VeterinarianDTO> getAllVeterinarians(String search, String status) {
+        return veterinarianRepository.findAll(buildSpecification(search, status)).stream()
                 .map(veterinarianMapper::toDTO)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VeterinarianDTO> getAllVeterinariansPaginated(String search, Pageable pageable) {
-        if (search == null || search.trim().isEmpty()) {
-            return veterinarianRepository.findAll(pageable)
-                    .map(veterinarianMapper::toDTO);
-        }
-        return veterinarianRepository.search(search, pageable)
+    public Page<VeterinarianDTO> getAllVeterinariansPaginated(String search, String status, Pageable pageable) {
+        return veterinarianRepository.findAll(buildSpecification(search, status), pageable)
                 .map(veterinarianMapper::toDTO);
     }
 
@@ -203,5 +199,55 @@ public class VeterinarianServiceImpl implements VeterinarianService {
             userRepository.save(user);
         }
         log.info("Veterinarian deactivated: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateVeterinarian(UUID id) {
+        Veterinarian vet = veterinarianRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Veterinarian not found"));
+
+        vet.setStatus("activo");
+        veterinarianRepository.save(vet);
+
+        User user = vet.getUser();
+        if (user != null) {
+            user.setIsActive(true);
+            userRepository.save(user);
+        }
+        log.info("Veterinarian reactivated: {}", id);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<Veterinarian> buildSpecification(String search, String status) {
+        Specification<Veterinarian> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan veterinarios activos
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), "activo"));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            String normalizedStatus = status.trim().toLowerCase();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), normalizedStatus));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> {
+                query.distinct(true);
+                Join<Veterinarian, User> user = root.join("user", JoinType.LEFT);
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(cb.lower(user.get("firstName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("lastName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("email")), pattern));
+                predicates.add(cb.like(cb.lower(root.get("licenseNumber")), pattern));
+                return cb.or(predicates.toArray(new Predicate[0]));
+            });
+        }
+
+        return spec;
     }
 }

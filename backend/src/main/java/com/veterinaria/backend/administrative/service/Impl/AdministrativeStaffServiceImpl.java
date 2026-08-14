@@ -20,14 +20,19 @@ import com.veterinaria.backend.role.model.Role;
 import com.veterinaria.backend.role.repository.RoleRepository;
 import com.veterinaria.backend.user.model.User;
 import com.veterinaria.backend.user.repository.UserRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,25 +53,16 @@ public class AdministrativeStaffServiceImpl implements AdministrativeStaffServic
 
     @Override
     @Transactional(readOnly = true)
-    public List<AdministrativeStaffDTO> getAllAdministrativeStaff(String search) {
-        if (search == null || search.trim().isEmpty()) {
-            return administrativeStaffRepository.findAllAdministrative().stream()
-                    .map(administrativeStaffMapper::toDTO)
-                    .toList();
-        }
-        return administrativeStaffRepository.searchList(search).stream()
+    public List<AdministrativeStaffDTO> getAllAdministrativeStaff(String search, String status) {
+        return administrativeStaffRepository.findAll(buildSpecification(search, status)).stream()
                 .map(administrativeStaffMapper::toDTO)
                 .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AdministrativeStaffDTO> getAllAdministrativeStaffPaginated(String search, Pageable pageable) {
-        if (search == null || search.trim().isEmpty()) {
-            return administrativeStaffRepository.findAllAdministrativePaginated(pageable)
-                    .map(administrativeStaffMapper::toDTO);
-        }
-        return administrativeStaffRepository.search(search, pageable)
+    public Page<AdministrativeStaffDTO> getAllAdministrativeStaffPaginated(String search, String status, Pageable pageable) {
+        return administrativeStaffRepository.findAll(buildSpecification(search, status), pageable)
                 .map(administrativeStaffMapper::toDTO);
     }
 
@@ -193,5 +189,57 @@ public class AdministrativeStaffServiceImpl implements AdministrativeStaffServic
             userRepository.saveAndFlush(user);
         }
         log.info("Administrative staff deactivated: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateAdministrativeStaff(UUID id) {
+        AdministrativeStaff staff = administrativeStaffRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Administrative staff not found"));
+
+        User user = staff.getUser();
+        if (user != null) {
+            user.setIsActive(true);
+            userRepository.saveAndFlush(user);
+        }
+        log.info("Administrative staff reactivated: {}", id);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<AdministrativeStaff> buildSpecification(String search, String status) {
+        Specification<AdministrativeStaff> spec = (root, query, cb) ->
+                cb.equal(root.get("user").get("role").get("name"), RoleNames.ADMINISTRATIVE);
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se lista personal administrativo activo
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("user").get("isActive")));
+        } else if ("activo".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("user").get("isActive")));
+        } else if ("inactivo".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isFalse(root.get("user").get("isActive")));
+        }
+        // status == "todos" (o cualquier otro valor): sin filtro de estado, se listan todos
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> {
+                query.distinct(true);
+                Join<AdministrativeStaff, User> user = root.join("user", JoinType.LEFT);
+                Join<AdministrativeStaff, AdministrativePosition> position = root.join("positions", JoinType.LEFT);
+                Join<AdministrativeStaff, AdministrativeArea> area = root.join("assignedArea", JoinType.LEFT);
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(cb.lower(user.get("firstName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("lastName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("email")), pattern));
+                predicates.add(cb.like(cb.lower(position.get("name")), pattern));
+                predicates.add(cb.like(cb.lower(area.get("name")), pattern));
+                return cb.or(predicates.toArray(new Predicate[0]));
+            });
+        }
+
+        return spec;
     }
 }

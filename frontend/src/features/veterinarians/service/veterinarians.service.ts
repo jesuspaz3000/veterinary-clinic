@@ -91,4 +91,8 @@ export const VeterinariansService = {
     deleteVeterinarian: async (id: string): Promise<void> => {
         await ApiService.delete(`/veterinarians/${id}`);
     },
+
+    reactivateVeterinarian: async (id: string): Promise<void> => {
+        await ApiService.post(`/veterinarians/${id}/reactivate`);
+    },
 };

@@ -30,6 +30,7 @@ public class VaccinationRecordMapper {
                 .applicationDate(record.getApplicationDate())
                 .nextDoseDate(record.getNextDoseDate())
                 .observations(record.getObservations())
+                .isActive(record.getIsActive())
                 .createdAt(record.getCreatedAt())
                 .updatedAt(record.getUpdatedAt())
                 .build();

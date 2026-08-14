@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useOwners } from "../hooks/useOwners";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
-import { OwnerResponse } from "../type/ownersTypes";
+import { OWNER_STATUS_FILTERS, OwnerResponse } from "../type/ownersTypes";
 import {
   Box,
   TextField,
+  MenuItem,
   InputAdornment,
   Chip,
   IconButton,
@@ -18,31 +19,40 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import PetsRoundedIcon from "@mui/icons-material/PetsRounded";
 import CreateOwnerDialog from "./CreateOwnerDialog";
 import EditOwnerDialog from "./EditOwnerDialog";
 import DeleteOwnerDialog from "./DeleteOwnerDialog";
+import ReactivateOwnerDialog from "./ReactivateOwnerDialog";
 
 export default function OwnerTable() {
   const { owners, loading, fetchOwners, error } = useOwners();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedOwner, setSelectedOwner] = useState<OwnerResponse | null>(null);
 
-  useEffect(() => {
+  const refresh = () =>
     void fetchOwners({
       limit: rowsPerPage,
       offset: page * rowsPerPage,
       search: search.trim() || undefined,
+      status: statusFilter,
     });
-  }, [page, rowsPerPage, search, fetchOwners]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, search, statusFilter, fetchOwners]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -165,36 +175,53 @@ export default function OwnerTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Cliente">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedOwner(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Desactivar Cliente">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedOwner(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      render: (row) =>
+        row.isActive ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Editar Cliente">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedOwner(row);
+                  setEditOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Desactivar Cliente">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedOwner(row);
+                  setDeleteOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <DeleteRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Reactivar Cliente">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedOwner(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
     },
   ];
 
@@ -210,29 +237,49 @@ export default function OwnerTable() {
           gap: 2,
         }}
       >
-        <TextField
-          placeholder="Buscar por nombre, documento, teléfono o correo..."
-          value={search}
-          onChange={handleSearchChange}
-          size="small"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: { xs: "100%", md: "40%" },
-            maxWidth: 450,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-            },
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+          <TextField
+            placeholder="Buscar por nombre, documento, teléfono o correo..."
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              width: { xs: "100%", md: "40%" },
+              maxWidth: 450,
+              flexGrow: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {OWNER_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
@@ -270,13 +317,7 @@ export default function OwnerTable() {
         <CreateOwnerDialog
           open={createOpen}
           onClose={() => setCreateOpen(false)}
-          onSuccess={() =>
-            void fetchOwners({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -289,13 +330,19 @@ export default function OwnerTable() {
             setEditOpen(false);
             setSelectedOwner(null);
           }}
-          onSuccess={() =>
-            void fetchOwners({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedOwner && (
+        <ReactivateOwnerDialog
+          open={reactivateOpen}
+          owner={selectedOwner}
+          onClose={() => {
+            setReactivateOpen(false);
+            setSelectedOwner(null);
+          }}
+          onSuccess={refresh}
         />
       )}
 
@@ -307,13 +354,7 @@ export default function OwnerTable() {
             setDeleteOpen(false);
             setSelectedOwner(null);
           }}
-          onSuccess={() =>
-            void fetchOwners({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
     </Box>

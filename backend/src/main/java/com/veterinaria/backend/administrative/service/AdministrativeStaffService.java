@@ -10,11 +10,12 @@ import java.util.List;
 import java.util.UUID;
 
 public interface AdministrativeStaffService {
-    List<AdministrativeStaffDTO> getAllAdministrativeStaff(String search);
-    Page<AdministrativeStaffDTO> getAllAdministrativeStaffPaginated(String search, Pageable pageable);
+    List<AdministrativeStaffDTO> getAllAdministrativeStaff(String search, String status);
+    Page<AdministrativeStaffDTO> getAllAdministrativeStaffPaginated(String search, String status, Pageable pageable);
     AdministrativeStaffDTO getAdministrativeStaffById(UUID id);
 
     AdministrativeStaffDTO createAdministrativeStaff(CreateAdministrativeStaffDTO dto);
     AdministrativeStaffDTO updateAdministrativeStaff(UUID id, UpdateAdministrativeStaffDTO dto);
     void deleteAdministrativeStaff(UUID id);
+    void reactivateAdministrativeStaff(UUID id);
 }

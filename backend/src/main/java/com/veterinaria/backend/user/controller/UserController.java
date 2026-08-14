@@ -43,12 +43,13 @@ public class UserController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
         if (limit != null) {
             int effectiveOffset = offset != null ? offset : 0;
             Pageable pageable = PaginationValidator.getPageable(limit, effectiveOffset, Sort.by("createdAt").descending());
-            Page<UserDTO> usersPage = userService.getAllUsersPaginated(search, pageable);
+            Page<UserDTO> usersPage = userService.getAllUsersPaginated(search, status, pageable);
             PaginatedResponse<UserDTO> response = PaginationValidator.buildPaginatedResponse(
                     usersPage,
                     limit,
@@ -58,7 +59,7 @@ public class UserController {
             );
             return ResponseEntity.ok(response);
         } else {
-            List<UserDTO> users = userService.getAllUsers(search);
+            List<UserDTO> users = userService.getAllUsers(search, status);
             PaginatedResponse<UserDTO> response = PaginatedResponse.<UserDTO>builder()
                     .count((long) users.size())
                     .next(null)
@@ -96,6 +97,14 @@ public class UserController {
     public ResponseEntity<MessageResponse> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.ok(new MessageResponse("User deleted successfully"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('USERS_UPDATE')")
+    @Operation(summary = "Reactivate user", description = "Reactivate a previously deactivated user")
+    public ResponseEntity<MessageResponse> reactivateUser(@PathVariable UUID id) {
+        userService.reactivateUser(id);
+        return ResponseEntity.ok(new MessageResponse("User reactivated successfully"));
     }
 
     @PutMapping("/{id}/reset-password")

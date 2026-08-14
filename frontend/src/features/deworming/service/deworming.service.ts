@@ -40,4 +40,8 @@ export const DewormingService = {
     deleteDewormingRecord: async (id: string): Promise<void> => {
         await ApiService.delete(`/deworming/${id}`);
     },
+
+    reactivateDewormingRecord: async (id: string): Promise<void> => {
+        await ApiService.post(`/deworming/${id}/reactivate`);
+    },
 };

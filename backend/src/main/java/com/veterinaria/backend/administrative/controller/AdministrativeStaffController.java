@@ -40,12 +40,13 @@ public class AdministrativeStaffController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
         if (limit != null) {
             int effectiveOffset = offset != null ? offset : 0;
             Pageable pageable = PaginationValidator.getPageable(limit, effectiveOffset, Sort.by("createdAt").descending());
-            Page<AdministrativeStaffDTO> staffPage = administrativeStaffService.getAllAdministrativeStaffPaginated(search, pageable);
+            Page<AdministrativeStaffDTO> staffPage = administrativeStaffService.getAllAdministrativeStaffPaginated(search, status, pageable);
             PaginatedResponse<AdministrativeStaffDTO> response = PaginationValidator.buildPaginatedResponse(
                     staffPage,
                     limit,
@@ -55,7 +56,7 @@ public class AdministrativeStaffController {
             );
             return ResponseEntity.ok(response);
         } else {
-            List<AdministrativeStaffDTO> staff = administrativeStaffService.getAllAdministrativeStaff(search);
+            List<AdministrativeStaffDTO> staff = administrativeStaffService.getAllAdministrativeStaff(search, status);
             PaginatedResponse<AdministrativeStaffDTO> response = PaginatedResponse.<AdministrativeStaffDTO>builder()
                     .count((long) staff.size())
                     .next(null)
@@ -96,5 +97,13 @@ public class AdministrativeStaffController {
     public ResponseEntity<MessageResponse> deleteAdministrativeStaff(@PathVariable UUID id) {
         administrativeStaffService.deleteAdministrativeStaff(id);
         return ResponseEntity.ok(new MessageResponse("Administrative staff deleted successfully"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('ADMINISTRATIVE_UPDATE')")
+    @Operation(summary = "Reactivate administrative staff", description = "Reactivate a previously deactivated administrative staff member")
+    public ResponseEntity<MessageResponse> reactivateAdministrativeStaff(@PathVariable UUID id) {
+        administrativeStaffService.reactivateAdministrativeStaff(id);
+        return ResponseEntity.ok(new MessageResponse("Administrative staff reactivated successfully"));
     }
 }

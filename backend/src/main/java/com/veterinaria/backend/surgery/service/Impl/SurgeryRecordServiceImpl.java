@@ -43,9 +43,9 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
     @Override
     @Transactional(readOnly = true)
     public Page<SurgeryRecordDTO> getAllSurgeryRecordsPaginated(UUID petId, UUID veterinarianId, String surgeryType,
-            String status, Instant from, Instant to, Pageable pageable) {
+            String status, Instant from, Instant to, String activeStatus, Pageable pageable) {
         return surgeryRecordRepository.findAll(
-                        buildSpecification(petId, veterinarianId, surgeryType, status, from, to), pageable)
+                        buildSpecification(petId, veterinarianId, surgeryType, status, from, to, activeStatus), pageable)
                 .map(surgeryRecordMapper::toDTO);
     }
 
@@ -120,7 +120,18 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
     @Override
     @Transactional
     public void deleteSurgeryRecord(UUID id) {
-        surgeryRecordRepository.delete(findRecord(id));
+        SurgeryRecord record = findRecord(id);
+        record.setIsActive(false);
+        surgeryRecordRepository.saveAndFlush(record);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateSurgeryRecord(UUID id) {
+        SurgeryRecord record = surgeryRecordRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Registro de cirugía no encontrado"));
+        record.setIsActive(true);
+        surgeryRecordRepository.saveAndFlush(record);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -129,6 +140,7 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
 
     private SurgeryRecord findRecord(UUID id) {
         return surgeryRecordRepository.findById(id)
+                .filter(SurgeryRecord::getIsActive)
                 .orElseThrow(() -> new NotFoundException("Registro de cirugía no encontrado"));
     }
 
@@ -173,8 +185,19 @@ public class SurgeryRecordServiceImpl implements SurgeryRecordService {
     }
 
     private Specification<SurgeryRecord> buildSpecification(UUID petId, UUID veterinarianId, String surgeryType,
-            String status, Instant from, Instant to) {
+            String status, Instant from, Instant to, String activeStatus) {
         Specification<SurgeryRecord> spec = (root, query, cb) -> cb.conjunction();
+
+        if (activeStatus == null || activeStatus.isBlank()) {
+            // Por defecto solo se listan registros activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if ("inactivo".equalsIgnoreCase(activeStatus.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isFalse(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(activeStatus.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        }
+        // activeStatus == "todos": sin filtro de eliminación lógica, se listan todos
+
         if (petId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("pet").get("id"), petId));
         }

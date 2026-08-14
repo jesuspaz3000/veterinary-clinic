@@ -11,6 +11,7 @@ import com.veterinaria.backend.user.dto.ResetPasswordDTO;
 import com.veterinaria.backend.user.dto.UpdateUserDTO;
 import com.veterinaria.backend.user.dto.UserDTO;
 import com.veterinaria.backend.user.event.UserDeactivatedEvent;
+import com.veterinaria.backend.user.event.UserReactivatedEvent;
 import com.veterinaria.backend.user.event.UserRoleChangedEvent;
 import com.veterinaria.backend.user.mapper.UserMapper;
 import com.veterinaria.backend.user.model.User;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,23 +43,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> getAllUsers(String search){
-        if(search == null || search.trim().isEmpty()){
-            List<User> users = userRepository.findAllWithoutSuperAdmin();
-            return users.stream().map(userMapper::toDTO).toList();
-        }
-        List<User> users = userRepository.findBySearchWithoutSuperAdmin(search);
+    public List<UserDTO> getAllUsers(String search, String status){
+        List<User> users = userRepository.findAll(buildSpecification(search, status));
         return users.stream().map(userMapper::toDTO).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserDTO> getAllUsersPaginated(String search, Pageable pageable){
-        if(search == null || search.trim().isEmpty()){
-            return userRepository.findAllWithoutSuperAdmin(pageable)
-                    .map(userMapper::toDTO);
-        }
-        return userRepository.findBySearchWithoutSuperAdmin(search, pageable)
+    public Page<UserDTO> getAllUsersPaginated(String search, String status, Pageable pageable){
+        return userRepository.findAll(buildSpecification(search, status), pageable)
                 .map(userMapper::toDTO);
     }
 
@@ -162,6 +156,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    public void reactivateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        user.setIsActive(true);
+        userRepository.saveAndFlush(user);
+
+        eventPublisher.publishEvent(new UserReactivatedEvent(user.getId()));
+
+        log.info("User reactivated: {}", user.getEmail());
+    }
+
+    @Override
+    @Transactional
     public void resetPassword(UUID id, ResetPasswordDTO dto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -171,5 +178,32 @@ public class UserServiceImpl implements UserService {
 
         userRepository.saveAndFlush(user);
         log.info("Password reset for user: {}", user.getEmail());
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<User> buildSpecification(String search, String status) {
+        Specification<User> spec = (root, query, cb) -> cb.notEqual(root.get("role").get("name"), "SUPERADMIN");
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan usuarios activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            boolean isActive = "activo".equalsIgnoreCase(status.trim());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isActive"), isActive));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("username")), pattern),
+                    cb.like(cb.lower(root.get("email")), pattern)
+            ));
+        }
+
+        return spec;
     }
 }

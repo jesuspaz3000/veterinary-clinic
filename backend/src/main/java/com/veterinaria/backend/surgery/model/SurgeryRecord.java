@@ -74,6 +74,10 @@ public class SurgeryRecord {
     @Column(nullable = false, length = 20)
     private String status = "programada"; // programada, en_proceso, completada, cancelada
 
+    @Builder.Default
+    @Column(name = "is_active", nullable = false, columnDefinition = "boolean not null default true")
+    private Boolean isActive = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,12 +50,8 @@ public class OwnerServiceImpl implements OwnerService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OwnerDTO> getAllOwnersPaginated(String search, Pageable pageable) {
-        if (search == null || search.trim().isEmpty()) {
-            return ownerRepository.findAllActivePaginated(pageable)
-                    .map(this::mapToDTOWithPets);
-        }
-        return ownerRepository.searchActive(search.trim(), pageable)
+    public Page<OwnerDTO> getAllOwnersPaginated(String search, String status, Pageable pageable) {
+        return ownerRepository.findAll(buildSpecification(search, status), pageable)
                 .map(this::mapToDTOWithPets);
     }
 
@@ -133,5 +130,46 @@ public class OwnerServiceImpl implements OwnerService {
         owner.setIsActive(false);
         ownerRepository.saveAndFlush(owner);
         log.info("Owner deactivated: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateOwner(UUID id) {
+        Owner owner = ownerRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cliente no encontrado"));
+
+        owner.setIsActive(true);
+        ownerRepository.saveAndFlush(owner);
+        log.info("Owner reactivated: {}", id);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<Owner> buildSpecification(String search, String status) {
+        Specification<Owner> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan clientes activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            boolean activeValue = "activo".equalsIgnoreCase(status.trim());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isActive"), activeValue));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("firstName")), pattern),
+                    cb.like(cb.lower(root.get("lastName")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("documentNumber"), "")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("phone"), "")), pattern),
+                    cb.like(cb.lower(cb.coalesce(root.get("email"), "")), pattern)
+            ));
+        }
+
+        return spec;
     }
 }

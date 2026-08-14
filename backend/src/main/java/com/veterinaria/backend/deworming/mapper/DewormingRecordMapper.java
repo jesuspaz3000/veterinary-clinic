@@ -30,6 +30,7 @@ public class DewormingRecordMapper {
                 .nextApplicationDate(record.getNextApplicationDate())
                 .dewormingType(record.getDewormingType())
                 .observations(record.getObservations())
+                .isActive(record.getIsActive())
                 .createdAt(record.getCreatedAt())
                 .updatedAt(record.getUpdatedAt())
                 .build();

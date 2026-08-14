@@ -46,10 +46,10 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
     @Transactional(readOnly = true)
     public Page<DewormingRecordDTO> getAllDewormingRecordsPaginated(UUID petId, UUID veterinarianId, String dewormingType,
             LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextApplicationFrom, LocalDate nextApplicationTo,
-            Pageable pageable) {
+            String status, Pageable pageable) {
         return dewormingRecordRepository.findAll(
                         buildSpecification(petId, veterinarianId, dewormingType, applicationFrom, applicationTo,
-                                nextApplicationFrom, nextApplicationTo), pageable)
+                                nextApplicationFrom, nextApplicationTo, status), pageable)
                 .map(dewormingRecordMapper::toDTO);
     }
 
@@ -122,7 +122,18 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
     @Override
     @Transactional
     public void deleteDewormingRecord(UUID id) {
-        dewormingRecordRepository.delete(findRecord(id));
+        DewormingRecord record = findRecord(id);
+        record.setIsActive(false);
+        dewormingRecordRepository.saveAndFlush(record);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateDewormingRecord(UUID id) {
+        DewormingRecord record = dewormingRecordRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Registro de desparasitación no encontrado"));
+        record.setIsActive(true);
+        dewormingRecordRepository.saveAndFlush(record);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -131,6 +142,7 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
 
     private DewormingRecord findRecord(UUID id) {
         return dewormingRecordRepository.findById(id)
+                .filter(DewormingRecord::getIsActive)
                 .orElseThrow(() -> new NotFoundException("Registro de desparasitación no encontrado"));
     }
 
@@ -165,8 +177,20 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
     }
 
     private Specification<DewormingRecord> buildSpecification(UUID petId, UUID veterinarianId, String dewormingType,
-            LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextApplicationFrom, LocalDate nextApplicationTo) {
+            LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextApplicationFrom, LocalDate nextApplicationTo,
+            String status) {
         Specification<DewormingRecord> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan registros activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if ("inactivo".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isFalse(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
         if (petId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("pet").get("id"), petId));
         }

@@ -12,10 +12,18 @@ export interface VeterinarianResponse {
     updatedAt: string;
 }
 
+export const VETERINARIAN_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "licencia", label: "Con licencia" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface VeterinarianRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }
 
 export interface VeterinarianCreateRequest {

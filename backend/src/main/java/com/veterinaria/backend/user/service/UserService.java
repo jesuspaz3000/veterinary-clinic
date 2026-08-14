@@ -11,12 +11,13 @@ import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
-    List<UserDTO> getAllUsers(String search);
-    Page<UserDTO> getAllUsersPaginated(String search, Pageable pageable);
+    List<UserDTO> getAllUsers(String search, String status);
+    Page<UserDTO> getAllUsersPaginated(String search, String status, Pageable pageable);
     UserDTO getUserById(UUID id);
 
     UserDTO createUser(CreateUserDTO dto);
     UserDTO updateUser(UUID id, UpdateUserDTO dto);
     void deleteUser(UUID id);
+    void reactivateUser(UUID id);
     void resetPassword(UUID id, ResetPasswordDTO dto);
 }

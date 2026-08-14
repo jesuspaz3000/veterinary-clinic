@@ -18,14 +18,19 @@ import com.veterinaria.backend.role.model.Role;
 import com.veterinaria.backend.role.repository.RoleRepository;
 import com.veterinaria.backend.user.model.User;
 import com.veterinaria.backend.user.repository.UserRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,24 +51,15 @@ public class GroomingStaffServiceImpl implements GroomingStaffService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<GroomingStaffDTO> getAllGroomingStaffPaginated(String search, Pageable pageable) {
-        if (search == null || search.trim().isEmpty()) {
-            return groomingStaffRepository.findAll(pageable)
-                    .map(groomingStaffMapper::toDTO);
-        }
-        return groomingStaffRepository.search(search, pageable)
+    public Page<GroomingStaffDTO> getAllGroomingStaffPaginated(String search, String status, Pageable pageable) {
+        return groomingStaffRepository.findAll(buildSpecification(search, status), pageable)
                 .map(groomingStaffMapper::toDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroomingStaffDTO> getAllGroomingStaff(String search) {
-        if (search == null || search.trim().isEmpty()) {
-            return groomingStaffRepository.findAll().stream()
-                    .map(groomingStaffMapper::toDTO)
-                    .toList();
-        }
-        return groomingStaffRepository.searchList(search).stream()
+    public List<GroomingStaffDTO> getAllGroomingStaff(String search, String status) {
+        return groomingStaffRepository.findAll(buildSpecification(search, status)).stream()
                 .map(groomingStaffMapper::toDTO)
                 .toList();
     }
@@ -192,5 +188,55 @@ public class GroomingStaffServiceImpl implements GroomingStaffService {
         staff.setStatus("inactivo");
         groomingStaffRepository.save(staff);
         log.info("Grooming staff deactivated: {}", user.getUsername());
+    }
+
+    @Override
+    @Transactional
+    public void reactivateGroomingStaff(UUID id) {
+        GroomingStaff staff = groomingStaffRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Grooming staff member not found"));
+
+        User user = staff.getUser();
+        user.setIsActive(true);
+        userRepository.save(user);
+
+        staff.setStatus("activo");
+        groomingStaffRepository.save(staff);
+        log.info("Grooming staff reactivated: {}", user.getUsername());
+    }
+
+    ////////////////////////////////////////////////////////////////
+    // Privados
+    ////////////////////////////////////////////////////////////////
+
+    private Specification<GroomingStaff> buildSpecification(String search, String status) {
+        Specification<GroomingStaff> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se lista personal activo
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), "activo"));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            String normalizedStatus = status.trim().toLowerCase();
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), normalizedStatus));
+        }
+        // status == "todos": sin filtro de estado, se lista todo el personal
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> {
+                query.distinct(true);
+                Join<GroomingStaff, User> user = root.join("user", JoinType.LEFT);
+                Join<GroomingStaff, GroomingSpecialty> specialty = root.join("specialties", JoinType.LEFT);
+                List<Predicate> predicates = new ArrayList<>();
+                predicates.add(cb.like(cb.lower(user.get("firstName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("lastName")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("email")), pattern));
+                predicates.add(cb.like(cb.lower(user.get("username")), pattern));
+                predicates.add(cb.like(cb.lower(specialty.get("name")), pattern));
+                return cb.or(predicates.toArray(new Predicate[0]));
+            });
+        }
+
+        return spec;
     }
 }

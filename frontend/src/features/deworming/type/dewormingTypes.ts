@@ -23,6 +23,7 @@ export interface DewormingRecordResponse {
     nextApplicationDate: string | null;
     dewormingType: DewormingType;
     observations: string | null;
+    isActive: boolean;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -39,6 +40,12 @@ export interface DewormingRecordRequest {
     observations?: string | null;
 }
 
+export const DEWORMING_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface DewormingRecordQueryParams {
     petId?: string;
     veterinarianId?: string;
@@ -47,6 +54,7 @@ export interface DewormingRecordQueryParams {
     applicationTo?: string;
     nextApplicationFrom?: string;
     nextApplicationTo?: string;
+    status?: string;
     limit?: number;
     offset?: number;
 }

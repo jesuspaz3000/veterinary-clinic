@@ -14,10 +14,17 @@ export interface OwnerResponse {
     updatedAt: string;
 }
 
+export const OWNER_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface OwnerRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }
 
 export interface OwnerCreateRequest {

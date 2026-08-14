@@ -19,6 +19,7 @@ import com.veterinaria.backend.role.mapper.PermissionMapper;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -127,6 +128,18 @@ public class RoleServiceImpl implements RoleService{
     }
 
     @Override
+    @Transactional
+    public void reactivateRole(UUID id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Role not found"));
+
+        role.setIsActive(true);
+        roleRepository.save(role);
+        roleRepository.flush();
+        log.info("Role reactivated:{}", role.getName());
+    }
+
+    @Override
     public RoleDTO getRoleById(UUID id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Role not found"));
@@ -135,24 +148,36 @@ public class RoleServiceImpl implements RoleService{
 
     @Override
     @Transactional(readOnly = true)
-    public List<RoleDTO> getAllRoles(String search) {
-        if(search == null || search.trim().isEmpty()){
-            List<Role> roles = roleRepository.findByNameNot(RoleNames.SUPERADMIN);
-            return roles.stream().map(roleMapper::toDTO).toList();
-        }
-        List<Role> roles = roleRepository.findBySearch(search);
+    public List<RoleDTO> getAllRoles(String search, String status) {
+        List<Role> roles = roleRepository.findAll(buildSpecification(search, status));
         return roles.stream().map(roleMapper::toDTO).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<RoleDTO> getAllRolesPaginated(String search, Pageable pageable){
-        if(search == null || search.trim().isEmpty()){
-            return roleRepository.findByNameNot(RoleNames.SUPERADMIN, pageable)
-                    .map(roleMapper::toDTO);
-        }
-        return roleRepository.findBySearch(search, pageable)
+    public Page<RoleDTO> getAllRolesPaginated(String search, String status, Pageable pageable){
+        return roleRepository.findAll(buildSpecification(search, status), pageable)
                 .map(roleMapper::toDTO);
+    }
+
+    private Specification<Role> buildSpecification(String search, String status) {
+        Specification<Role> spec = (root, query, cb) -> cb.notEqual(root.get("name"), RoleNames.SUPERADMIN);
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan roles activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            boolean isActive = "activo".equalsIgnoreCase(status.trim());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isActive"), isActive));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
+        if (search != null && !search.trim().isEmpty()) {
+            String pattern = "%" + search.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("name")), pattern));
+        }
+
+        return spec;
     }
 
     @Override
@@ -205,7 +230,8 @@ public class RoleServiceImpl implements RoleService{
                 "MEDICAL_RECORDS_CREATE", "MEDICAL_RECORDS_READ", "MEDICAL_RECORDS_UPDATE",
                 "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE",
                 "DEWORMING_CREATE", "DEWORMING_READ", "DEWORMING_UPDATE",
-                "SURGERIES_CREATE", "SURGERIES_READ", "SURGERIES_UPDATE"
+                "SURGERIES_CREATE", "SURGERIES_READ", "SURGERIES_UPDATE",
+                "HOSPITALIZATION_CREATE", "HOSPITALIZATION_READ", "HOSPITALIZATION_UPDATE"
         ));
         defaultRolePermissions.put(RoleNames.ADMIN, List.of(
                 "USERS_CREATE", "USERS_READ", "USERS_UPDATE", "USERS_DELETE",
@@ -220,7 +246,8 @@ public class RoleServiceImpl implements RoleService{
                 "MEDICAL_RECORDS_CREATE", "MEDICAL_RECORDS_READ", "MEDICAL_RECORDS_UPDATE", "MEDICAL_RECORDS_DELETE",
                 "VACCINATIONS_CREATE", "VACCINATIONS_READ", "VACCINATIONS_UPDATE", "VACCINATIONS_DELETE",
                 "DEWORMING_CREATE", "DEWORMING_READ", "DEWORMING_UPDATE", "DEWORMING_DELETE",
-                "SURGERIES_CREATE", "SURGERIES_READ", "SURGERIES_UPDATE", "SURGERIES_DELETE"
+                "SURGERIES_CREATE", "SURGERIES_READ", "SURGERIES_UPDATE", "SURGERIES_DELETE",
+                "HOSPITALIZATION_CREATE", "HOSPITALIZATION_READ", "HOSPITALIZATION_UPDATE", "HOSPITALIZATION_DELETE"
         ));
         defaultRolePermissions.put(RoleNames.GROOMING, List.of(
                 "GROOMING_READ", "OWNERS_READ", "PETS_READ",
@@ -233,7 +260,8 @@ public class RoleServiceImpl implements RoleService{
                 "MEDICAL_RECORDS_READ",
                 "VACCINATIONS_READ",
                 "DEWORMING_READ",
-                "SURGERIES_READ"
+                "SURGERIES_READ",
+                "HOSPITALIZATION_READ"
         ));
 
         for (Map.Entry<String, List<String>> entry : defaultRolePermissions.entrySet()) {
@@ -289,6 +317,7 @@ public class RoleServiceImpl implements RoleService{
         moduleActions.put("VACCINATIONS", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("DEWORMING", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("SURGERIES", List.of("CREATE", "READ", "UPDATE", "DELETE"));
+        moduleActions.put("HOSPITALIZATION", List.of("CREATE", "READ", "UPDATE", "DELETE"));
 
         Set<String> existingNames = new HashSet<>();
         permissionRepository.findAll().forEach(p -> existingNames.add(p.getName()));
@@ -393,6 +422,11 @@ public class RoleServiceImpl implements RoleService{
             case "SURGERIES_READ" -> "Ver cirugías";
             case "SURGERIES_UPDATE" -> "Actualizar cirugías";
             case "SURGERIES_DELETE" -> "Eliminar cirugías";
+
+            case "HOSPITALIZATION_CREATE" -> "Registrar hospitalizaciones";
+            case "HOSPITALIZATION_READ" -> "Ver hospitalizaciones";
+            case "HOSPITALIZATION_UPDATE" -> "Actualizar hospitalizaciones";
+            case "HOSPITALIZATION_DELETE" -> "Eliminar hospitalizaciones";
 
             default -> module + " " + action;
         };

@@ -14,11 +14,12 @@ public interface RoleService {
     RoleDTO createRole(RoleCreateUpdateDTO dto);
     RoleDTO updateRole(UUID id, RoleCreateUpdateDTO dto);
     void deleteRole(UUID id);
+    void reactivateRole(UUID id);
 
     // ===== QUERYS ROLES ==
     RoleDTO getRoleById(UUID id);
-    List<RoleDTO> getAllRoles(String search);
-    Page<RoleDTO> getAllRolesPaginated(String search, Pageable pageable);
+    List<RoleDTO> getAllRoles(String search, String status);
+    Page<RoleDTO> getAllRolesPaginated(String search, String status, Pageable pageable);
 
     // ===== QUERYS PERMISSIONS ==
     List<PermissionDTO> getAllPermissions(String search);

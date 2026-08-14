@@ -40,4 +40,8 @@ export const SurgeriesService = {
     deleteSurgeryRecord: async (id: string): Promise<void> => {
         await ApiService.delete(`/surgeries/${id}`);
     },
+
+    reactivateSurgeryRecord: async (id: string): Promise<void> => {
+        await ApiService.post(`/surgeries/${id}/reactivate`);
+    },
 };

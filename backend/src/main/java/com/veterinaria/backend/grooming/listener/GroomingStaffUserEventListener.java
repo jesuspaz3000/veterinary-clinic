@@ -4,6 +4,7 @@ import com.veterinaria.backend.common.constants.RoleNames;
 import com.veterinaria.backend.grooming.model.GroomingStaff;
 import com.veterinaria.backend.grooming.repository.GroomingStaffRepository;
 import com.veterinaria.backend.user.event.UserDeactivatedEvent;
+import com.veterinaria.backend.user.event.UserReactivatedEvent;
 import com.veterinaria.backend.user.event.UserRoleChangedEvent;
 import com.veterinaria.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,14 @@ public class GroomingStaffUserEventListener {
     public void onUserDeactivated(UserDeactivatedEvent event) {
         groomingStaffRepository.findByUserId(event.userId()).ifPresent(staff -> {
             staff.setStatus("inactivo");
+            groomingStaffRepository.saveAndFlush(staff);
+        });
+    }
+
+    @EventListener
+    public void onUserReactivated(UserReactivatedEvent event) {
+        groomingStaffRepository.findByUserId(event.userId()).ifPresent(staff -> {
+            staff.setStatus("activo");
             groomingStaffRepository.saveAndFlush(staff);
         });
     }

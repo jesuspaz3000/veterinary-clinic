@@ -15,9 +15,10 @@ import {
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
 import { useSurgeries } from "../hooks/useSurgeries";
-import { SurgeryRecordResponse, SURGERY_TYPES, SURGERY_TYPE_LABELS, SURGERY_STATUSES, SURGERY_STATUS_LABELS } from "../type/surgeriesTypes";
+import { SurgeryRecordResponse, SURGERY_TYPES, SURGERY_TYPE_LABELS, SURGERY_STATUSES, SURGERY_STATUS_LABELS, SURGERY_ACTIVE_STATUS_FILTERS } from "../type/surgeriesTypes";
 import { SurgeryTypeChip, SurgeryStatusChip } from "./SurgeryChips";
 import { PetService } from "@/features/pets/service/pets.service";
 import { PetResponse } from "@/features/pets/type/petsTypes";
@@ -26,6 +27,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { PERMISSIONS } from "@/shared/config/permissions";
 import SurgeryFormDialog from "./SurgeryFormDialog";
 import DeleteSurgeryDialog from "./DeleteSurgeryDialog";
+import ReactivateSurgeryDialog from "./ReactivateSurgeryDialog";
 
 export default function SurgeriesTable() {
   const { records, loading, fetchRecords, error } = useSurgeries();
@@ -40,10 +42,12 @@ export default function SurgeriesTable() {
   const [petFilter, setPetFilter] = useState<PetResponse | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string>("activo");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<SurgeryRecordResponse | null>(null);
 
   useEffect(() => {
@@ -58,12 +62,13 @@ export default function SurgeriesTable() {
     petId: petFilter?.id ?? undefined,
     surgeryType: typeFilter || undefined,
     status: statusFilter || undefined,
+    activeStatus: activeStatusFilter,
   });
 
   useEffect(() => {
     void fetchRecords(buildParams());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, petFilter, typeFilter, statusFilter, fetchRecords]);
+  }, [page, rowsPerPage, petFilter, typeFilter, statusFilter, activeStatusFilter, fetchRecords]);
 
   const refresh = () => void fetchRecords(buildParams());
 
@@ -136,40 +141,59 @@ export default function SurgeriesTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          {canUpdate && (
-            <Tooltip title="Editar registro">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => {
-                  setSelectedRecord(row);
-                  setEditOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {canDelete && (
-            <Tooltip title="Eliminar registro">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => {
-                  setSelectedRecord(row);
-                  setDeleteOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <DeleteRoundedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      ),
+      render: (row) =>
+        row.isActive ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            {canUpdate && (
+              <Tooltip title="Editar registro">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setEditOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Tooltip title="Eliminar registro">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setDeleteOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <DeleteRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            {canUpdate && (
+              <Tooltip title="Reactivar registro">
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => {
+                    setSelectedRecord(row);
+                    setReactivateOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <RestoreRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
+        ),
     },
   ];
 
@@ -238,6 +262,23 @@ export default function SurgeriesTable() {
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            select
+            label="Activo/Inactivo"
+            value={activeStatusFilter}
+            onChange={(e) => {
+              setActiveStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 170 }}
+          >
+            {SURGERY_ACTIVE_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
         </Box>
 
         {canCreate && (
@@ -291,6 +332,18 @@ export default function SurgeriesTable() {
           record={selectedRecord}
           onClose={() => {
             setDeleteOpen(false);
+            setSelectedRecord(null);
+          }}
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedRecord && (
+        <ReactivateSurgeryDialog
+          open
+          record={selectedRecord}
+          onClose={() => {
+            setReactivateOpen(false);
             setSelectedRecord(null);
           }}
           onSuccess={refresh}

@@ -20,11 +20,18 @@ export interface PetResponse {
     updatedAt: string;
 }
 
+export const PET_STATUS_FILTERS = [
+    { value: "activo", label: "Activas" },
+    { value: "inactivo", label: "Inactivas" },
+    { value: "todos", label: "Todas" },
+] as const;
+
 export interface PetRequest {
     limit?: number;
     offset?: number;
     search?: string;
     ownerId?: string;
+    status?: string;
 }
 
 export interface PetCreateRequest {

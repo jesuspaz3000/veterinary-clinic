@@ -35,6 +35,7 @@ export interface SurgeryRecordResponse {
     postSurgeryNotes: string | null;
     complications: string | null;
     status: SurgeryStatus;
+    isActive: boolean;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -55,6 +56,12 @@ export interface SurgeryRecordRequest {
     status?: string;
 }
 
+export const SURGERY_ACTIVE_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface SurgeryRecordQueryParams {
     petId?: string;
     veterinarianId?: string;
@@ -62,6 +69,7 @@ export interface SurgeryRecordQueryParams {
     status?: string;
     from?: string;
     to?: string;
+    activeStatus?: string;
     limit?: number;
     offset?: number;
 }

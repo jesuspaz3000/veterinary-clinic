@@ -105,4 +105,8 @@ export const PetService = {
     deletePet: async (id: string): Promise<void> => {
         await ApiService.delete(`/pets/${id}`);
     },
+
+    reactivatePet: async (id: string): Promise<void> => {
+        await ApiService.post(`/pets/${id}/reactivate`);
+    },
 };

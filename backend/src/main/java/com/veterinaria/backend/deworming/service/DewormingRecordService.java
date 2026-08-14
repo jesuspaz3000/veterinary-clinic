@@ -13,7 +13,7 @@ public interface DewormingRecordService {
 
     Page<DewormingRecordDTO> getAllDewormingRecordsPaginated(UUID petId, UUID veterinarianId, String dewormingType,
             LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextApplicationFrom, LocalDate nextApplicationTo,
-            Pageable pageable);
+            String status, Pageable pageable);
 
     DewormingRecordDTO getDewormingRecordById(UUID id);
 
@@ -22,4 +22,6 @@ public interface DewormingRecordService {
     DewormingRecordDTO updateDewormingRecord(UUID id, UpdateDewormingRecordDTO dto);
 
     void deleteDewormingRecord(UUID id);
+
+    void reactivateDewormingRecord(UUID id);
 }

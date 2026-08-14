@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useAdministrativeStaff } from "../hooks/administrativeHooks";
 import CustomTable, { Column } from "@/shared/components/CustomTable";
-import { AdministrativeStaffResponse } from "../type/administrativeTypes";
+import { ADMINISTRATIVE_STATUS_FILTERS, AdministrativeStaffResponse } from "../type/administrativeTypes";
 import {
   Box,
   TextField,
+  MenuItem,
   InputAdornment,
   Chip,
   IconButton,
@@ -18,11 +19,13 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import CreateAdministrativeStaff from "./CreateAdministrativeStaff";
 import EditAdministrativeStaff from "./EditAdministrativeStaff";
 import DeleteAdministrativeStaff from "./DeleteAdministrativeStaff";
+import ReactivateAdministrativeStaff from "./ReactivateAdministrativeStaff";
 import ManageAdministrativePositionsDialog from "./ManageAdministrativePositionsDialog";
 import ManageAdministrativeAreasDialog from "./ManageAdministrativeAreasDialog";
 
@@ -31,22 +34,29 @@ export default function AdministrativeTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [managePositionsOpen, setManagePositionsOpen] = useState(false);
   const [manageAreasOpen, setManageAreasOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<AdministrativeStaffResponse | null>(null);
 
-  useEffect(() => {
+  const refresh = () =>
     void fetchAdministrativeStaff({
       limit: rowsPerPage,
       offset: page * rowsPerPage,
       search: search.trim() || undefined,
+      status: statusFilter,
     });
-  }, [page, rowsPerPage, search, fetchAdministrativeStaff]);
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, rowsPerPage, search, statusFilter, fetchAdministrativeStaff]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -185,36 +195,53 @@ export default function AdministrativeTable() {
       label: "Acciones",
       minWidth: 110,
       align: "center",
-      render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Personal">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedStaff(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Eliminar Personal">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedStaff(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      ),
+      render: (row) =>
+        row.user.isActive ? (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Editar Personal">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setEditOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <EditRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Eliminar Personal">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setDeleteOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <DeleteRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="Reactivar Personal">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedStaff(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
     },
   ];
 
@@ -230,29 +257,49 @@ export default function AdministrativeTable() {
           gap: 2,
         }}
       >
-        <TextField
-          placeholder="Buscar por nombre, usuario, correo, cargo o área..."
-          value={search}
-          onChange={handleSearchChange}
-          size="small"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: "text.secondary" }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: { xs: "100%", md: "40%" },
-            maxWidth: 450,
-            "& .MuiOutlinedInput-root": {
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-            },
-          }}
-        />
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+          <TextField
+            placeholder="Buscar por nombre, usuario, correo, cargo o área..."
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: "text.secondary" }} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{
+              width: { xs: "100%", md: "40%" },
+              maxWidth: 450,
+              flexGrow: 1,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <TextField
+            select
+            label="Estado"
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {ADMINISTRATIVE_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
 
         <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
@@ -316,13 +363,7 @@ export default function AdministrativeTable() {
         <ManageAdministrativePositionsDialog
           open={managePositionsOpen}
           onClose={() => setManagePositionsOpen(false)}
-          onPositionChange={() =>
-            void fetchAdministrativeStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onPositionChange={refresh}
         />
       )}
 
@@ -330,13 +371,7 @@ export default function AdministrativeTable() {
         <ManageAdministrativeAreasDialog
           open={manageAreasOpen}
           onClose={() => setManageAreasOpen(false)}
-          onAreaChange={() =>
-            void fetchAdministrativeStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onAreaChange={refresh}
         />
       )}
 
@@ -344,13 +379,7 @@ export default function AdministrativeTable() {
         <CreateAdministrativeStaff
           open={createOpen}
           onClose={() => setCreateOpen(false)}
-          onSuccess={() =>
-            void fetchAdministrativeStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -363,13 +392,7 @@ export default function AdministrativeTable() {
             setEditOpen(false);
             setSelectedStaff(null);
           }}
-          onSuccess={() =>
-            void fetchAdministrativeStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
         />
       )}
 
@@ -381,13 +404,19 @@ export default function AdministrativeTable() {
             setDeleteOpen(false);
             setSelectedStaff(null);
           }}
-          onSuccess={() =>
-            void fetchAdministrativeStaff({
-              limit: rowsPerPage,
-              offset: page * rowsPerPage,
-              search: search.trim() || undefined,
-            })
-          }
+          onSuccess={refresh}
+        />
+      )}
+
+      {reactivateOpen && selectedStaff && (
+        <ReactivateAdministrativeStaff
+          open={reactivateOpen}
+          staff={selectedStaff}
+          onClose={() => {
+            setReactivateOpen(false);
+            setSelectedStaff(null);
+          }}
+          onSuccess={refresh}
         />
       )}
     </Box>

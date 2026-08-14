@@ -11,10 +11,17 @@ export interface AdministrativeStaffResponse {
     updatedAt: string;
 }
 
+export const ADMINISTRATIVE_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface AdministrativeStaffRequest {
     limit?: number;
     offset?: number;
     search?: string;
+    status?: string;
 }
 
 export interface AdministrativeStaffCreateRequest {

@@ -38,12 +38,13 @@ public class PetController {
     public ResponseEntity<PaginatedResponse<PetDTO>> getPets(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID ownerId,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         int pageNumber = limit > 0 ? offset / limit : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PetDTO> pageResult = petService.getAllPetsPaginated(search, ownerId, pageRequest);
+        Page<PetDTO> pageResult = petService.getAllPetsPaginated(search, ownerId, status, pageRequest);
 
         return ResponseEntity.ok(PaginatedResponse.<PetDTO>builder()
                 .count(pageResult.getTotalElements())
@@ -90,5 +91,13 @@ public class PetController {
     public ResponseEntity<MessageResponse> deletePet(@PathVariable UUID id) {
         petService.deletePet(id);
         return ResponseEntity.ok(new MessageResponse("Mascota desactivada exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('PETS_UPDATE') or hasAuthority('USERS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate pet", description = "Reactivate a previously deactivated pet profile")
+    public ResponseEntity<MessageResponse> reactivatePet(@PathVariable UUID id) {
+        petService.reactivatePet(id);
+        return ResponseEntity.ok(new MessageResponse("Mascota reactivada exitosamente"));
     }
 }

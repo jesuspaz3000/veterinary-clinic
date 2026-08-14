@@ -13,7 +13,7 @@ public interface VaccinationRecordService {
 
     Page<VaccinationRecordDTO> getAllVaccinationRecordsPaginated(UUID petId, UUID veterinarianId,
             LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextDoseFrom, LocalDate nextDoseTo,
-            Pageable pageable);
+            String status, Pageable pageable);
 
     VaccinationRecordDTO getVaccinationRecordById(UUID id);
 
@@ -22,4 +22,6 @@ public interface VaccinationRecordService {
     VaccinationRecordDTO updateVaccinationRecord(UUID id, UpdateVaccinationRecordDTO dto);
 
     void deleteVaccinationRecord(UUID id);
+
+    void reactivateVaccinationRecord(UUID id);
 }

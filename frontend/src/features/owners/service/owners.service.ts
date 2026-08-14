@@ -49,4 +49,8 @@ export const OwnerService = {
     deleteOwner: async (id: string): Promise<void> => {
         await ApiService.delete(`/owners/${id}`);
     },
+
+    reactivateOwner: async (id: string): Promise<void> => {
+        await ApiService.post(`/owners/${id}/reactivate`);
+    },
 };

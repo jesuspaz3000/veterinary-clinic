@@ -36,12 +36,13 @@ public class OwnerController {
     @Operation(summary = "Get owners paginated", description = "Get list of clients with optional search query and pagination")
     public ResponseEntity<PaginatedResponse<OwnerDTO>> getOwners(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset
     ) {
         int pageNumber = limit > 0 ? offset / limit : 0;
         PageRequest pageRequest = PageRequest.of(pageNumber, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<OwnerDTO> pageResult = ownerService.getAllOwnersPaginated(search, pageRequest);
+        Page<OwnerDTO> pageResult = ownerService.getAllOwnersPaginated(search, status, pageRequest);
 
         return ResponseEntity.ok(PaginatedResponse.<OwnerDTO>builder()
                 .count(pageResult.getTotalElements())
@@ -85,5 +86,13 @@ public class OwnerController {
     public ResponseEntity<MessageResponse> deleteOwner(@PathVariable UUID id) {
         ownerService.deleteOwner(id);
         return ResponseEntity.ok(new MessageResponse("Cliente desactivado exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('OWNERS_UPDATE') or hasAuthority('USERS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate owner", description = "Reactivate a previously deactivated client account")
+    public ResponseEntity<MessageResponse> reactivateOwner(@PathVariable UUID id) {
+        ownerService.reactivateOwner(id);
+        return ResponseEntity.ok(new MessageResponse("Cliente reactivado exitosamente"));
     }
 }

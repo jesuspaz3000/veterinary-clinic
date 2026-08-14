@@ -10,10 +10,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface GroomingStaffService {
-    Page<GroomingStaffDTO> getAllGroomingStaffPaginated(String search, Pageable pageable);
-    List<GroomingStaffDTO> getAllGroomingStaff(String search);
+    Page<GroomingStaffDTO> getAllGroomingStaffPaginated(String search, String status, Pageable pageable);
+    List<GroomingStaffDTO> getAllGroomingStaff(String search, String status);
     GroomingStaffDTO getGroomingStaffById(UUID id);
     GroomingStaffDTO createGroomingStaff(CreateGroomingStaffDTO dto);
     GroomingStaffDTO updateGroomingStaff(UUID id, UpdateGroomingStaffDTO dto);
     void deleteGroomingStaff(UUID id);
+    void reactivateGroomingStaff(UUID id);
 }

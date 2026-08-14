@@ -14,6 +14,7 @@ export interface VaccinationRecordResponse {
     applicationDate: string;
     nextDoseDate: string | null;
     observations: string | null;
+    isActive: boolean;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -29,6 +30,12 @@ export interface VaccinationRecordRequest {
     observations?: string | null;
 }
 
+export const VACCINATION_STATUS_FILTERS = [
+    { value: "activo", label: "Activos" },
+    { value: "inactivo", label: "Inactivos" },
+    { value: "todos", label: "Todos" },
+] as const;
+
 export interface VaccinationRecordQueryParams {
     petId?: string;
     veterinarianId?: string;
@@ -36,6 +43,7 @@ export interface VaccinationRecordQueryParams {
     applicationTo?: string;
     nextDoseFrom?: string;
     nextDoseTo?: string;
+    status?: string;
     limit?: number;
     offset?: number;
 }

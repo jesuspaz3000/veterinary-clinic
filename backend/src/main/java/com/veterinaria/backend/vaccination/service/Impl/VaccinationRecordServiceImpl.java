@@ -43,9 +43,9 @@ public class VaccinationRecordServiceImpl implements VaccinationRecordService {
     @Transactional(readOnly = true)
     public Page<VaccinationRecordDTO> getAllVaccinationRecordsPaginated(UUID petId, UUID veterinarianId,
             LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextDoseFrom, LocalDate nextDoseTo,
-            Pageable pageable) {
+            String status, Pageable pageable) {
         return vaccinationRecordRepository.findAll(
-                        buildSpecification(petId, veterinarianId, applicationFrom, applicationTo, nextDoseFrom, nextDoseTo), pageable)
+                        buildSpecification(petId, veterinarianId, applicationFrom, applicationTo, nextDoseFrom, nextDoseTo, status), pageable)
                 .map(vaccinationRecordMapper::toDTO);
     }
 
@@ -114,7 +114,18 @@ public class VaccinationRecordServiceImpl implements VaccinationRecordService {
     @Override
     @Transactional
     public void deleteVaccinationRecord(UUID id) {
-        vaccinationRecordRepository.delete(findRecord(id));
+        VaccinationRecord record = findRecord(id);
+        record.setIsActive(false);
+        vaccinationRecordRepository.saveAndFlush(record);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateVaccinationRecord(UUID id) {
+        VaccinationRecord record = vaccinationRecordRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Registro de vacunación no encontrado"));
+        record.setIsActive(true);
+        vaccinationRecordRepository.saveAndFlush(record);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -123,6 +134,7 @@ public class VaccinationRecordServiceImpl implements VaccinationRecordService {
 
     private VaccinationRecord findRecord(UUID id) {
         return vaccinationRecordRepository.findById(id)
+                .filter(VaccinationRecord::getIsActive)
                 .orElseThrow(() -> new NotFoundException("Registro de vacunación no encontrado"));
     }
 
@@ -149,8 +161,20 @@ public class VaccinationRecordServiceImpl implements VaccinationRecordService {
     }
 
     private Specification<VaccinationRecord> buildSpecification(UUID petId, UUID veterinarianId,
-            LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextDoseFrom, LocalDate nextDoseTo) {
+            LocalDate applicationFrom, LocalDate applicationTo, LocalDate nextDoseFrom, LocalDate nextDoseTo,
+            String status) {
         Specification<VaccinationRecord> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status == null || status.isBlank()) {
+            // Por defecto solo se listan registros activos
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        } else if ("inactivo".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isFalse(root.get("isActive")));
+        } else if (!"todos".equalsIgnoreCase(status.trim())) {
+            spec = spec.and((root, query, cb) -> cb.isTrue(root.get("isActive")));
+        }
+        // status == "todos": sin filtro de estado, se listan todos
+
         if (petId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("pet").get("id"), petId));
         }

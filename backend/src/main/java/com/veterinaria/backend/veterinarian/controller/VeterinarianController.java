@@ -42,12 +42,13 @@ public class VeterinarianController {
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
             HttpServletRequest request
     ) {
         if (limit != null) {
             int effectiveOffset = offset != null ? offset : 0;
             Pageable pageable = PaginationValidator.getPageable(limit, effectiveOffset, Sort.by("createdAt").descending());
-            Page<VeterinarianDTO> vetsPage = veterinarianService.getAllVeterinariansPaginated(search, pageable);
+            Page<VeterinarianDTO> vetsPage = veterinarianService.getAllVeterinariansPaginated(search, status, pageable);
             PaginatedResponse<VeterinarianDTO> response = PaginationValidator.buildPaginatedResponse(
                     vetsPage,
                     limit,
@@ -57,7 +58,7 @@ public class VeterinarianController {
             );
             return ResponseEntity.ok(response);
         } else {
-            List<VeterinarianDTO> vets = veterinarianService.getAllVeterinarians(search);
+            List<VeterinarianDTO> vets = veterinarianService.getAllVeterinarians(search, status);
             PaginatedResponse<VeterinarianDTO> response = PaginatedResponse.<VeterinarianDTO>builder()
                     .count((long) vets.size())
                     .next(null)
@@ -98,5 +99,13 @@ public class VeterinarianController {
     public ResponseEntity<MessageResponse> deleteVeterinarian(@PathVariable UUID id) {
         veterinarianService.deleteVeterinarian(id);
         return ResponseEntity.ok(new MessageResponse("Veterinarian deleted successfully"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('VETERINARIANS_UPDATE')")
+    @Operation(summary = "Reactivate veterinarian", description = "Reactivate a previously deactivated veterinarian")
+    public ResponseEntity<MessageResponse> reactivateVeterinarian(@PathVariable UUID id) {
+        veterinarianService.reactivateVeterinarian(id);
+        return ResponseEntity.ok(new MessageResponse("Veterinarian reactivated successfully"));
     }
 }
