@@ -1,6 +1,7 @@
 package com.veterinaria.backend.hospitalization.service.Impl;
 
 import com.veterinaria.backend.common.exception.BusinessException;
+import com.veterinaria.backend.common.exception.ConflictException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.hospitalization.dto.CreateHospitalizationEvolutionDTO;
 import com.veterinaria.backend.hospitalization.dto.CreateHospitalizationRecordDTO;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,6 +39,13 @@ import java.util.UUID;
 public class HospitalizationRecordServiceImpl implements HospitalizationRecordService {
 
     private static final Set<String> STATUSES = Set.of("activo", "alta", "transferido");
+
+    // Transiciones de estado permitidas (incluye la identidad para permitir guardar sin cambiar de estado)
+    private static final Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
+            "activo", Set.of("activo", "alta", "transferido"),
+            "alta", Set.of("alta"),
+            "transferido", Set.of("transferido")
+    );
 
     private final HospitalizationRecordRepository hospitalizationRecordRepository;
     private final PetRepository petRepository;
@@ -69,13 +78,21 @@ public class HospitalizationRecordServiceImpl implements HospitalizationRecordSe
         MedicalRecord medicalRecord = resolveMedicalRecord(dto.getMedicalRecordId(), pet);
         Veterinarian veterinarian = veterinarianRepository.findById(dto.getVeterinarianId())
                 .orElseThrow(() -> new NotFoundException("Veterinario no encontrado"));
+        String cageNumber = trimToNull(dto.getCageNumber());
+
+        if (hospitalizationRecordRepository.existsByPetIdAndStatusAndIsActiveTrue(pet.getId(), "activo")) {
+            throw new ConflictException("La mascota ya tiene una hospitalización activa en curso");
+        }
+        if (cageNumber != null && hospitalizationRecordRepository.existsByCageNumberAndStatusAndIsActiveTrue(cageNumber, "activo")) {
+            throw new ConflictException("La jaula '" + cageNumber + "' ya está ocupada por otra mascota");
+        }
 
         HospitalizationRecord record = HospitalizationRecord.builder()
                 .pet(pet)
                 .medicalRecord(medicalRecord)
                 .admissionDate(dto.getAdmissionDate())
                 .reason(dto.getReason().trim())
-                .cageNumber(trimToNull(dto.getCageNumber()))
+                .cageNumber(cageNumber)
                 .veterinarian(veterinarian)
                 .build();
 
@@ -93,8 +110,23 @@ public class HospitalizationRecordServiceImpl implements HospitalizationRecordSe
         Veterinarian veterinarian = veterinarianRepository.findById(dto.getVeterinarianId())
                 .orElseThrow(() -> new NotFoundException("Veterinario no encontrado"));
         String status = validateStatus(dto.getStatus());
+        String cageNumber = trimToNull(dto.getCageNumber());
         if (dto.getDischargeDate() != null && dto.getDischargeDate().isBefore(dto.getAdmissionDate())) {
             throw new BusinessException("La fecha de alta debe ser posterior a la fecha de ingreso");
+        }
+
+        Set<String> allowedNext = VALID_TRANSITIONS.get(record.getStatus());
+        if (allowedNext == null || !allowedNext.contains(status)) {
+            throw new BusinessException("No se puede cambiar el estado de la hospitalización de '" + record.getStatus() + "' a '" + status + "'");
+        }
+
+        if ("activo".equals(status)) {
+            if (hospitalizationRecordRepository.existsByPetIdAndStatusAndIsActiveTrueAndIdNot(pet.getId(), "activo", id)) {
+                throw new ConflictException("La mascota ya tiene otra hospitalización activa en curso");
+            }
+            if (cageNumber != null && hospitalizationRecordRepository.existsByCageNumberAndStatusAndIsActiveTrueAndIdNot(cageNumber, "activo", id)) {
+                throw new ConflictException("La jaula '" + cageNumber + "' ya está ocupada por otra mascota");
+            }
         }
 
         record.setPet(pet);
@@ -102,7 +134,7 @@ public class HospitalizationRecordServiceImpl implements HospitalizationRecordSe
         record.setAdmissionDate(dto.getAdmissionDate());
         record.setDischargeDate(dto.getDischargeDate());
         record.setReason(dto.getReason().trim());
-        record.setCageNumber(trimToNull(dto.getCageNumber()));
+        record.setCageNumber(cageNumber);
         record.setVeterinarian(veterinarian);
         record.setStatus(status);
         record.setFinalDiagnosis(trimToNull(dto.getFinalDiagnosis()));
