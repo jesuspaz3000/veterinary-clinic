@@ -37,6 +37,8 @@ import { SchedulesService } from "@/features/schedules/service/schedules.service
 import { ScheduleResponse } from "@/features/schedules/type/schedulesTypes";
 import { getUserDisplayName } from "../utils/professionals";
 import AppointmentSlotPicker from "./AppointmentSlotPicker";
+import MedicalRecordFormDialog from "@/features/medical-records/components/MedicalRecordFormDialog";
+import { MedicalRecordAppointmentPrefill } from "@/features/medical-records/type/medicalRecordsTypes";
 
 /** Límites del día para los selectores de hora (00:00–23:59) */
 const DAY_MIN = dayjs("2000-01-01T00:00:00");
@@ -44,6 +46,9 @@ const DAY_MAX = dayjs("2000-01-01T23:59:59");
 
 /** Parsea "HH:mm:ss" a Dayjs con una fecha base */
 const parseTime = (time: string): Dayjs => dayjs(`2000-01-01T${time}`);
+
+/** Minutos desde medianoche, ignorando la fecha (para comparar solo horas de reloj) */
+const toMinutesOfDay = (value: Dayjs): number => value.hour() * 60 + value.minute();
 
 interface EditAppointmentDialogProps {
   open: boolean;
@@ -73,11 +78,16 @@ export default function EditAppointmentDialog({
   const [serviceType, setServiceType] = useState<string>("");
   const [status, setStatus] = useState<AppointmentStatus>("pendiente");
   const [notes, setNotes] = useState("");
+  // Estado de la cita tal como estaba al abrir el diálogo, para detectar la
+  // transición a "completada" y ofrecer crear el registro médico
+  const [loadedStatus, setLoadedStatus] = useState<AppointmentStatus | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [professionalSchedule, setProfessionalSchedule] = useState<ScheduleResponse | null>(null);
   const [scheduleFetchFailed, setScheduleFetchFailed] = useState(false);
+  const [showRecordPrompt, setShowRecordPrompt] = useState(false);
+  const [openMedicalRecordForm, setOpenMedicalRecordForm] = useState(false);
 
   // Carga la cita fresca por ID junto con las opciones de mascotas/profesionales
   useEffect(() => {
@@ -103,6 +113,7 @@ export default function EditAppointmentDialog({
         setEndTime(dayjs(data.endTime, "HH:mm:ss"));
         setServiceType(data.serviceType);
         setStatus(data.status);
+        setLoadedStatus(data.status);
         setNotes(data.notes || "");
       } catch (err) {
         console.error("Error loading appointment:", err);
@@ -184,7 +195,11 @@ export default function EditAppointmentDialog({
       setErrorMessage("El profesional seleccionado no tiene horario disponible ese día.");
       return;
     }
-    if (enforceSchedule && professionalSchedule && (startTime.isBefore(scheduleMin) || endTime.isAfter(scheduleMax))) {
+    if (
+      enforceSchedule &&
+      professionalSchedule &&
+      (toMinutesOfDay(startTime) < toMinutesOfDay(scheduleMin) || toMinutesOfDay(endTime) > toMinutesOfDay(scheduleMax))
+    ) {
       setErrorMessage(
         `La cita debe estar dentro del horario de atención (${professionalSchedule.startTime.slice(0, 5)}–${professionalSchedule.endTime.slice(0, 5)}).`
       );
@@ -213,7 +228,14 @@ export default function EditAppointmentDialog({
     try {
       await AppointmentService.updateAppointment(appointmentId, dto);
       onSuccess();
-      onClose();
+      // Si la cita recién pasó a "completada" y tiene veterinario asignado,
+      // se ofrece crear el registro médico correspondiente antes de cerrar
+      const justCompleted = status === "completada" && loadedStatus !== "completada" && selectedVet !== null;
+      if (justCompleted) {
+        setShowRecordPrompt(true);
+      } else {
+        onClose();
+      }
     } catch (error: unknown) {
       console.error("Error updating appointment:", error);
       const err = error as { response?: { data?: { message?: string } }; message?: string };
@@ -424,6 +446,67 @@ export default function EditAppointmentDialog({
           </Button>
         </DialogActions>
       </form>
+
+      {/* Tras completar la cita: ofrece crear el registro médico correspondiente */}
+      <Dialog
+        open={showRecordPrompt}
+        onClose={() => {
+          setShowRecordPrompt(false);
+          onClose();
+        }}
+        maxWidth="xs"
+        fullWidth
+        disableRestoreFocus
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Cita completada</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            La cita se marcó como completada. ¿Deseas crear ahora el registro médico correspondiente?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            onClick={() => {
+              setShowRecordPrompt(false);
+              onClose();
+            }}
+            sx={{ textTransform: "none" }}
+          >
+            Ahora no
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setShowRecordPrompt(false);
+              setOpenMedicalRecordForm(true);
+            }}
+            sx={{ textTransform: "none", fontWeight: 600 }}
+          >
+            Crear registro médico
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {openMedicalRecordForm && selectedPet && selectedVet && date && startTime && (
+        <MedicalRecordFormDialog
+          open
+          onClose={() => {
+            setOpenMedicalRecordForm(false);
+            onClose();
+          }}
+          onSuccess={() => {}}
+          prefillFromAppointment={
+            {
+              appointmentId,
+              pet: selectedPet,
+              veterinarian: selectedVet,
+              date: date.format("YYYY-MM-DD"),
+              startTime: startTime.format("HH:mm:ss"),
+              serviceType,
+            } as MedicalRecordAppointmentPrefill
+          }
+        />
+      )}
     </Dialog>
   );
 }

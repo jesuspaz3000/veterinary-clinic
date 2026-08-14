@@ -38,6 +38,9 @@ const DAY_MAX = dayjs("2000-01-01T23:59:59");
 /** Parsea "HH:mm:ss" a Dayjs con una fecha base */
 const parseTime = (time: string): Dayjs => dayjs(`2000-01-01T${time}`);
 
+/** Minutos desde medianoche, ignorando la fecha (para comparar solo horas de reloj) */
+const toMinutesOfDay = (value: Dayjs): number => value.hour() * 60 + value.minute();
+
 interface CreateAppointmentDialogProps {
   open: boolean;
   onClose: () => void;
@@ -167,7 +170,10 @@ export default function CreateAppointmentDialog({
       setErrorMessage("El profesional seleccionado no tiene horario disponible ese día.");
       return;
     }
-    if (professionalSchedule && (startTime.isBefore(scheduleMin) || endTime.isAfter(scheduleMax))) {
+    if (
+      professionalSchedule &&
+      (toMinutesOfDay(startTime) < toMinutesOfDay(scheduleMin) || toMinutesOfDay(endTime) > toMinutesOfDay(scheduleMax))
+    ) {
       setErrorMessage(
         `La cita debe estar dentro del horario de atención (${professionalSchedule.startTime.slice(0, 5)}–${professionalSchedule.endTime.slice(0, 5)}).`
       );

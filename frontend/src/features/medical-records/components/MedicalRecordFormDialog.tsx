@@ -37,6 +37,7 @@ import { MedicalRecordsService } from "../service/medicalRecords.service";
 import {
   MedicalRecordResponse,
   MedicalRecordRequest,
+  MedicalRecordAppointmentPrefill,
   RECORD_TYPES,
   RECORD_TYPE_LABELS,
   RECORD_STATUSES,
@@ -66,6 +67,8 @@ interface MedicalRecordFormDialogProps {
   onClose: () => void;
   onSuccess: () => void;
   record?: MedicalRecordResponse | null;
+  /** Precarga el formulario a partir de una cita recién marcada como completada */
+  prefillFromAppointment?: MedicalRecordAppointmentPrefill | null;
 }
 
 export default function MedicalRecordFormDialog({
@@ -73,6 +76,7 @@ export default function MedicalRecordFormDialog({
   onClose,
   onSuccess,
   record = null,
+  prefillFromAppointment = null,
 }: MedicalRecordFormDialogProps) {
   const isEditing = record !== null;
 
@@ -82,14 +86,22 @@ export default function MedicalRecordFormDialog({
   const [petAppointments, setPetAppointments] = useState<AppointmentResponse[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
 
-  const [selectedPet, setSelectedPet] = useState<PetResponse | null>(record?.pet ?? null);
-  const [selectedVet, setSelectedVet] = useState<VeterinarianResponse | null>(record?.veterinarian ?? null);
+  const [selectedPet, setSelectedPet] = useState<PetResponse | null>(
+    record?.pet ?? prefillFromAppointment?.pet ?? null
+  );
+  const [selectedVet, setSelectedVet] = useState<VeterinarianResponse | null>(
+    record?.veterinarian ?? prefillFromAppointment?.veterinarian ?? null
+  );
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentResponse | null>(null);
   const [recordType, setRecordType] = useState<string>(record?.recordType ?? "consulta");
   const [recordDate, setRecordDate] = useState<Dayjs | null>(
-    record ? dayjs(record.recordDate) : dayjs()
+    record
+      ? dayjs(record.recordDate)
+      : prefillFromAppointment
+        ? dayjs(`${prefillFromAppointment.date}T${prefillFromAppointment.startTime}`)
+        : dayjs()
   );
-  const [reason, setReason] = useState(record?.reason ?? "");
+  const [reason, setReason] = useState(record?.reason ?? prefillFromAppointment?.serviceType ?? "");
   const [symptoms, setSymptoms] = useState(record?.symptoms ?? "");
   const [diagnosis, setDiagnosis] = useState(record?.diagnosis ?? "");
   const [treatment, setTreatment] = useState(record?.treatment ?? "");
@@ -154,7 +166,13 @@ export default function MedicalRecordFormDialog({
       }
       try {
         const data = await AppointmentService.getAllAppointments({ petId: selectedPet.id });
-        if (!cancelled) setPetAppointments(data);
+        if (!cancelled) {
+          setPetAppointments(data);
+          if (prefillFromAppointment) {
+            const match = data.find((a) => a.id === prefillFromAppointment.appointmentId) ?? null;
+            setSelectedAppointment((prev) => prev ?? match);
+          }
+        }
       } catch (err) {
         console.error("Error loading pet appointments:", err);
         if (!cancelled) setPetAppointments([]);
@@ -164,7 +182,7 @@ export default function MedicalRecordFormDialog({
     return () => {
       cancelled = true;
     };
-  }, [selectedPet]);
+  }, [selectedPet, prefillFromAppointment]);
 
   const updateRow = (key: number, patch: Partial<PrescriptionRow>) => {
     setPrescriptions((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));

@@ -118,10 +118,18 @@ export default function AppointmentSlotPicker({
     });
   }, [weekAppointments, professionalId, excludeAppointmentId, selectedVet, selectedGroomer]);
 
+  const toTimeStr = (mins: number): string =>
+    `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+
   const handleSlotClick = (day: Dayjs, time: string) => {
     if (disabled) return;
     const slotStart = toMinutes(time);
-    const slotEnd = slotStart + SLOT_DURATION;
+
+    // Por defecto, un clic selecciona solo una franja corta; si hay profesional
+    // con horario ese día, se preselecciona el bloque disponible completo
+    // (el usuario puede acortarlo luego con los campos de "ajuste fino").
+    let rangeStart = slotStart;
+    let rangeEnd = slotStart + SLOT_DURATION;
 
     if (professionalId) {
       const schedule = scheduleByDay.get(day.day());
@@ -129,29 +137,46 @@ export default function AppointmentSlotPicker({
         setHint("El profesional no tiene horario disponible ese día. Elige otro día.");
         return;
       }
-      if (slotStart < toMinutes(schedule.startTime) || slotEnd > toMinutes(schedule.endTime)) {
+      const scheduleStart = toMinutes(schedule.startTime);
+      const scheduleEnd = toMinutes(schedule.endTime);
+      if (slotStart < scheduleStart || slotStart >= scheduleEnd) {
         setHint(
           `Elige una franja dentro del horario de atención (${schedule.startTime.slice(0, 5)}–${schedule.endTime.slice(0, 5)}).`
         );
         return;
       }
+      rangeStart = scheduleStart;
+      rangeEnd = scheduleEnd;
+
       const dateStr = day.format("YYYY-MM-DD");
       const busy = professionalEvents.some(
         (a) =>
           a.status !== "cancelada" &&
           a.date === dateStr &&
-          slotStart < toMinutes(a.endTime) &&
-          slotEnd > toMinutes(a.startTime)
+          rangeStart < toMinutes(a.endTime) &&
+          rangeEnd > toMinutes(a.startTime)
       );
       if (busy) {
-        setHint("El profesional ya tiene una cita en ese horario.");
+        setHint(
+          "El profesional ya tiene una cita dentro de ese horario. Ajusta el rango con los campos de hora si aún queda una franja libre."
+        );
         return;
       }
     }
 
     setHint(null);
-    const start = dayjs(`${day.format("YYYY-MM-DD")}T${time}:00`);
-    onSelect(day, start, start.add(SLOT_DURATION, "minute"));
+    const start = dayjs(`${day.format("YYYY-MM-DD")}T${toTimeStr(rangeStart)}:00`);
+    const end = dayjs(`${day.format("YYYY-MM-DD")}T${toTimeStr(rangeEnd)}:00`);
+    onSelect(day, start, end);
+  };
+
+  const isPastDay = (day: Dayjs) => day.isBefore(dayjs(), "day");
+
+  const handleDisabledDayClick = (day: Dayjs) => {
+    setHint(
+      `El ${day.format("dddd D [de] MMMM")} ya pasó. Elige una fecha desde hoy en adelante — te llevamos a la misma franja la próxima semana.`
+    );
+    setWeekStart(getWeekStart(day.add(7, "day")));
   };
 
   return (
@@ -166,6 +191,8 @@ export default function AppointmentSlotPicker({
         maxHeight={360}
         initialScrollHour={8}
         onSlotClick={disabled ? undefined : handleSlotClick}
+        isDayDisabled={isPastDay}
+        onDisabledDayClick={disabled ? undefined : handleDisabledDayClick}
         renderDayBackground={(day) => {
           if (!professionalId) return null;
           const schedule = scheduleByDay.get(day.day());
@@ -199,10 +226,27 @@ export default function AppointmentSlotPicker({
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
+                  lineHeight: 1.2,
                 }}
               >
                 {schedule.isAvailable ? "Horario disponible" : "No disponible"}
               </Typography>
+              {schedule.isAvailable && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: "0.65rem",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {schedule.startTime.slice(0, 5)}–{schedule.endTime.slice(0, 5)}
+                </Typography>
+              )}
             </Box>
           );
         }}

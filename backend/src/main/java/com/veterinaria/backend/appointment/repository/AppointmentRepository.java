@@ -9,10 +9,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID>, JpaSpecificationExecutor<Appointment> {
+
+    List<Appointment> findByPetIdOrderByDateDescStartTimeDesc(UUID petId);
 
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.veterinarian.id = :veterinarianId " +
             "AND a.date = :date AND a.status <> 'cancelada' AND a.id <> :excludeId " +

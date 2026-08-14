@@ -46,6 +46,10 @@ interface WeeklyCalendarProps<T extends CalendarEvent> {
   renderEvent: (event: T) => React.ReactNode;
   onEventClick?: (event: T) => void;
   onSlotClick?: (date: Dayjs, time: string) => void;
+  /** Determina si un día debe mostrarse deshabilitado (ej. fechas pasadas) */
+  isDayDisabled?: (day: Dayjs) => boolean;
+  /** Se dispara al hacer clic en una franja de un día deshabilitado, en vez de onSlotClick */
+  onDisabledDayClick?: (day: Dayjs) => void;
 }
 
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -83,6 +87,8 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
   renderEvent,
   onEventClick,
   onSlotClick,
+  isDayDisabled,
+  onDisabledDayClick,
 }: WeeklyCalendarProps<T>) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const gridScrollRef = useRef<HTMLDivElement>(null);
@@ -269,6 +275,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
               <Box sx={{ width: TIME_COL_WIDTH, flexShrink: 0 }} />
               {days.map((day, i) => {
                 const isToday = !recurring && day.isSame(today, "day");
+                const isDisabledDay = !recurring && (isDayDisabled?.(day) ?? false);
                 return (
                   <Box
                     key={day.format("YYYY-MM-DD")}
@@ -279,6 +286,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                       borderLeft: "1px solid",
                       borderColor: "divider",
                       bgcolor: isToday ? "action.selected" : "transparent",
+                      opacity: isDisabledDay ? 0.4 : 1,
                     }}
                   >
                     {/* Día y fecha en una sola línea (horizontal) */}
@@ -348,7 +356,9 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
               </Box>
 
               {/* Columnas de día con eventos posicionados */}
-              {days.map((day) => (
+              {days.map((day) => {
+                const isDisabledDay = !recurring && (isDayDisabled?.(day) ?? false);
+                return (
                 <Box
                   key={day.format("YYYY-MM-DD")}
                   sx={{
@@ -357,6 +367,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                     height: gridHeight,
                     borderLeft: "1px solid",
                     borderColor: "divider",
+                    opacity: isDisabledDay ? 0.4 : 1,
                   }}
                 >
                   {/* Fondo del día (horarios de atención, etc.) */}
@@ -379,6 +390,10 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                     <Box
                       key={slotStart}
                       onClick={() => {
+                        if (isDisabledDay) {
+                          onDisabledDayClick?.(day);
+                          return;
+                        }
                         const h = String(Math.floor(slotStart / 60)).padStart(2, "0");
                         const m = String(slotStart % 60).padStart(2, "0");
                         onSlotClick?.(day, `${h}:${m}`);
@@ -387,9 +402,9 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                         height: slotHeight,
                         borderBottom: (slotStart + slotMinutes) % 60 === 0 ? "1px solid" : "1px dashed",
                         borderColor: "divider",
-                        cursor: onSlotClick ? "pointer" : "default",
+                        cursor: isDisabledDay ? "not-allowed" : onSlotClick ? "pointer" : "default",
                         transition: "background-color 0.15s ease",
-                        "&:hover": onSlotClick ? { bgcolor: "action.hover" } : {},
+                        "&:hover": !isDisabledDay && onSlotClick ? { bgcolor: "action.hover" } : {},
                       }}
                     />
                   ))}
@@ -424,7 +439,8 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                     );
                   })}
                 </Box>
-              ))}
+                );
+              })}
             </Box>
           </Box>
         </Box>

@@ -118,6 +118,16 @@ export interface MedicalRecordRequest {
     prescriptions: PrescriptionItemRequest[];
 }
 
+/** Datos para precargar el formulario al crear un registro médico desde una cita completada */
+export interface MedicalRecordAppointmentPrefill {
+    appointmentId: string;
+    pet: PetResponse;
+    veterinarian: VeterinarianResponse;
+    date: string; // YYYY-MM-DD
+    startTime: string; // HH:mm:ss
+    serviceType: string;
+}
+
 export interface MedicalRecordQueryParams {
     petId?: string;
     veterinarianId?: string;

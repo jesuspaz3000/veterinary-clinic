@@ -34,6 +34,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,6 +45,14 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private static final Set<String> VALID_STATUSES = Set.of("pendiente", "confirmada", "completada", "cancelada");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+
+    // Transiciones de estado permitidas (incluye la identidad para permitir guardar sin cambiar de estado)
+    private static final Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
+            "pendiente", Set.of("pendiente", "confirmada", "cancelada"),
+            "confirmada", Set.of("confirmada", "completada", "cancelada"),
+            "completada", Set.of("completada"),
+            "cancelada", Set.of("cancelada")
+    );
 
     private final AppointmentRepository appointmentRepository;
     private final PetRepository petRepository;
@@ -81,9 +90,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentDTO createAppointment(CreateAppointmentDTO dto) {
         validateSchedule(dto.getDate(), dto.getStartTime(), dto.getEndTime());
 
-        Pet pet = petRepository.findById(dto.getPetId())
-                .filter(p -> "activo".equalsIgnoreCase(p.getStatus()))
-                .orElseThrow(() -> new NotFoundException("La mascota especificada no existe"));
+        Pet pet = findActivePet(dto.getPetId());
 
         Veterinarian veterinarian = findActiveVeterinarian(dto.getVeterinarianId());
         GroomingStaff groomingStaff = findActiveGroomingStaff(dto.getGroomingStaffId());
@@ -125,10 +132,12 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (!VALID_STATUSES.contains(status)) {
             throw new BusinessException("Estado inválido: " + dto.getStatus() + ". Valores permitidos: " + String.join(", ", VALID_STATUSES));
         }
+        Set<String> allowedNext = VALID_TRANSITIONS.get(appointment.getStatus());
+        if (allowedNext == null || !allowedNext.contains(status)) {
+            throw new BusinessException("No se puede cambiar el estado de la cita de '" + appointment.getStatus() + "' a '" + status + "'");
+        }
 
-        Pet pet = petRepository.findById(dto.getPetId())
-                .filter(p -> "activo".equalsIgnoreCase(p.getStatus()))
-                .orElseThrow(() -> new NotFoundException("La mascota especificada no existe"));
+        Pet pet = findActivePet(dto.getPetId());
 
         Veterinarian veterinarian = findActiveVeterinarian(dto.getVeterinarianId());
         GroomingStaff groomingStaff = findActiveGroomingStaff(dto.getGroomingStaffId());
@@ -213,7 +222,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         int dayOfWeek = date.getDayOfWeek().getValue() % 7;
         if (veterinarian != null) {
             VeterinarianSchedule schedule = veterinarianScheduleRepository
-                    .findByVeterinarianIdAndDayOfWeek(veterinarian.getId(), dayOfWeek)
+                    .findByVeterinarianIdAndDayOfWeekAndIsActiveTrue(veterinarian.getId(), dayOfWeek)
                     .orElseThrow(() -> new BusinessException(
                             "El veterinario no tiene un horario registrado para ese día de la semana"));
             validateWithinSchedule(schedule.getIsAvailable(), schedule.getStartTime(), schedule.getEndTime(),
@@ -221,7 +230,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
         if (groomingStaff != null) {
             GroomingSchedule schedule = groomingScheduleRepository
-                    .findByGroomingStaffIdAndDayOfWeek(groomingStaff.getId(), dayOfWeek)
+                    .findByGroomingStaffIdAndDayOfWeekAndIsActiveTrue(groomingStaff.getId(), dayOfWeek)
                     .orElseThrow(() -> new BusinessException(
                             "El personal de grooming no tiene un horario registrado para ese día de la semana"));
             validateWithinSchedule(schedule.getIsAvailable(), schedule.getStartTime(), schedule.getEndTime(),
@@ -239,6 +248,16 @@ public class AppointmentServiceImpl implements AppointmentService {
                     "La cita debe estar dentro del horario de atención del %s (%s–%s)",
                     professionalLabel, HH_MM.format(scheduleStart), HH_MM.format(scheduleEnd)));
         }
+    }
+
+    private Pet findActivePet(UUID petId) {
+        Pet pet = petRepository.findById(petId)
+                .filter(p -> "activo".equalsIgnoreCase(p.getStatus()))
+                .orElseThrow(() -> new NotFoundException("La mascota especificada no existe"));
+        if (pet.getOwner() == null || !Boolean.TRUE.equals(pet.getOwner().getIsActive())) {
+            throw new BusinessException("No se puede agendar una cita para una mascota cuyo dueño está inactivo");
+        }
+        return pet;
     }
 
     private Veterinarian findActiveVeterinarian(UUID veterinarianId) {
