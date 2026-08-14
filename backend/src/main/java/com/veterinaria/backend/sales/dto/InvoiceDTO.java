@@ -28,6 +28,8 @@ public class InvoiceDTO {
     private BigDecimal discount;
     private BigDecimal tax;
     private BigDecimal total;
+    private BigDecimal amountPaid;
+    private BigDecimal balance;
     private String notes;
     private UUID userId;
     private String userName;

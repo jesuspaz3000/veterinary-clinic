@@ -2,6 +2,7 @@ package com.veterinaria.backend.sales.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -32,7 +33,8 @@ public class CreateInvoiceDTO {
     @Valid
     private List<CreateInvoiceItemDTO> items;
 
-    @NotEmpty(message = "Debe registrar al menos un pago.")
+    // Puede venir vacía: una venta "al crédito" se registra sin pagos y queda "pendiente".
+    @NotNull(message = "La lista de pagos es obligatoria (puede ir vacía para una venta al crédito).")
     @Valid
     private List<CreateInvoicePaymentDTO> payments;
 }

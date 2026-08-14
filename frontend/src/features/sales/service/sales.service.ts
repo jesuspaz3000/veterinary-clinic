@@ -3,6 +3,7 @@ import { PaginationResponse } from "@/shared/types/pagination";
 import {
   InvoiceResponse,
   CreateInvoiceRequest,
+  CreateInvoicePaymentRequest,
   InvoiceFilters,
 } from "../types/salesTypes";
 
@@ -21,6 +22,11 @@ export const SalesService = {
 
   createInvoice: async (request: CreateInvoiceRequest): Promise<InvoiceResponse> => {
     const response = await ApiService.post<InvoiceResponse>("/sales", request);
+    return response.data;
+  },
+
+  registerPayment: async (invoiceId: string, request: CreateInvoicePaymentRequest): Promise<InvoiceResponse> => {
+    const response = await ApiService.post<InvoiceResponse>(`/sales/${invoiceId}/payments`, request);
     return response.data;
   },
 };

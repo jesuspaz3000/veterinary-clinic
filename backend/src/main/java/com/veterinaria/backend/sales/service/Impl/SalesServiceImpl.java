@@ -5,20 +5,21 @@ import com.veterinaria.backend.common.exception.BusinessException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.owner.model.Owner;
 import com.veterinaria.backend.owner.repository.OwnerRepository;
-import com.veterinaria.backend.product.model.InventoryLot;
 import com.veterinaria.backend.product.model.ProductVariant;
-import com.veterinaria.backend.product.repository.InventoryLotRepository;
 import com.veterinaria.backend.product.repository.ProductVariantRepository;
 import com.veterinaria.backend.sales.dto.*;
 import com.veterinaria.backend.sales.mapper.InvoiceMapper;
 import com.veterinaria.backend.sales.model.*;
-import com.veterinaria.backend.sales.repository.InventoryMovementRepository;
 import com.veterinaria.backend.sales.repository.InvoiceRepository;
+import com.veterinaria.backend.sales.service.InventoryMovementService;
+import com.veterinaria.backend.sales.service.LotDeduction;
 import com.veterinaria.backend.sales.service.SalesService;
 import com.veterinaria.backend.user.model.User;
 import com.veterinaria.backend.user.repository.UserRepository;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
 import com.veterinaria.backend.veterinarian.repository.VeterinarianRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,12 +41,16 @@ public class SalesServiceImpl implements SalesService {
 
     private final InvoiceRepository invoiceRepository;
     private final ProductVariantRepository variantRepository;
-    private final InventoryLotRepository lotRepository;
-    private final InventoryMovementRepository movementRepository;
+    private final InventoryMovementService inventoryMovementService;
     private final UserRepository userRepository;
     private final OwnerRepository ownerRepository;
     private final VeterinarianRepository veterinarianRepository;
     private final InvoiceMapper invoiceMapper;
+
+    private static final BigDecimal PAYMENT_TOLERANCE = BigDecimal.valueOf(0.05);
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -167,18 +172,17 @@ public class SalesServiceImpl implements SalesService {
             }
 
             BigDecimal qty = itemDto.getQuantity();
-            BigDecimal unitPrice = itemDto.getUnitPrice();
             BigDecimal itemDiscount = itemDto.getDiscount() != null ? itemDto.getDiscount() : BigDecimal.ZERO;
-            BigDecimal lineSubtotal = unitPrice.multiply(qty).subtract(itemDiscount).setScale(2, RoundingMode.HALF_UP);
-
-            itemsSubtotalSum = itemsSubtotalSum.add(unitPrice.multiply(qty));
-            itemsDiscountSum = itemsDiscountSum.add(itemDiscount);
 
             ProductVariant variant = null;
             String description = itemDto.getDescription();
+            BigDecimal unitPrice;
 
             if (hasVariant) {
-                variant = variantRepository.findById(itemDto.getVariantId())
+                // findByIdForUpdate toma un bloqueo pesimista sobre la fila de la variante,
+                // así una segunda venta concurrente del mismo producto espera a que esta
+                // transacción confirme (o revierta) antes de leer/validar su stock.
+                variant = variantRepository.findByIdForUpdate(itemDto.getVariantId())
                         .orElseThrow(() -> new NotFoundException("Variante de producto no encontrada."));
 
                 if (!Boolean.TRUE.equals(variant.getIsActive())) {
@@ -190,6 +194,11 @@ public class SalesServiceImpl implements SalesService {
                     description = (prodName + " - " + variant.getName()).trim();
                 }
 
+                // El precio unitario de un producto del catálogo siempre se toma del catálogo
+                // (variant.salePrice), nunca del valor enviado por el cliente, para evitar
+                // que la API pueda usarse para facturar a un precio arbitrario.
+                unitPrice = variant.getSalePrice();
+
                 // Check overall stock
                 BigDecimal currentStock = BigDecimal.valueOf(variant.getStock() != null ? variant.getStock() : 0);
                 if (currentStock.compareTo(qty) < 0) {
@@ -199,7 +208,15 @@ public class SalesServiceImpl implements SalesService {
                 if (!StringUtils.hasText(description)) {
                     description = itemDto.getServiceName();
                 }
+                // Los servicios (sin variante de catálogo) no tienen precio de referencia,
+                // así que se confía en el precio indicado por el cliente para este ítem.
+                unitPrice = itemDto.getUnitPrice();
             }
+
+            BigDecimal lineSubtotal = unitPrice.multiply(qty).subtract(itemDiscount).setScale(2, RoundingMode.HALF_UP);
+
+            itemsSubtotalSum = itemsSubtotalSum.add(unitPrice.multiply(qty));
+            itemsDiscountSum = itemsDiscountSum.add(itemDiscount);
 
             InvoiceItem item = InvoiceItem.builder()
                     .invoice(invoice)
@@ -240,7 +257,9 @@ public class SalesServiceImpl implements SalesService {
         invoice.setTax(tax);
         invoice.setTotal(total);
 
-        // Validate payments sum
+        // Registrar los pagos recibidos al momento de la venta. La lista puede venir
+        // vacía (venta al crédito) o cubrir solo una parte del total (abono inicial);
+        // el saldo pendiente se cobra después mediante registerPayment().
         BigDecimal totalPaymentsSum = BigDecimal.ZERO;
         for (CreateInvoicePaymentDTO paymentDto : dto.getPayments()) {
             InvoicePayment payment = InvoicePayment.builder()
@@ -254,76 +273,82 @@ public class SalesServiceImpl implements SalesService {
             invoice.getPayments().add(payment);
         }
 
-        if (totalPaymentsSum.subtract(total).abs().compareTo(BigDecimal.valueOf(0.05)) > 0) {
-            throw new BusinessException(String.format("El monto total pagado (S/. %.2f) no coincide con el total del comprobante (S/. %.2f).", totalPaymentsSum, total));
+        if (totalPaymentsSum.subtract(total).compareTo(PAYMENT_TOLERANCE) > 0) {
+            throw new BusinessException(String.format("El monto total pagado (S/. %.2f) excede el total del comprobante (S/. %.2f).", totalPaymentsSum, total));
         }
+        invoice.setPaymentStatus(computePaymentStatus(totalPaymentsSum, total));
 
         Invoice savedInvoice = invoiceRepository.saveAndFlush(invoice);
         return invoiceMapper.toDTO(savedInvoice);
     }
 
+    @Override
+    @Transactional
+    public InvoiceDTO registerPayment(UUID invoiceId, CreateInvoicePaymentDTO dto) {
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new NotFoundException("Comprobante de venta no encontrado."));
+
+        if ("anulado".equalsIgnoreCase(invoice.getPaymentStatus())) {
+            throw new BusinessException("No se pueden registrar pagos sobre un comprobante anulado.");
+        }
+
+        BigDecimal currentPaid = invoice.getPayments().stream()
+                .map(InvoicePayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal newTotalPaid = currentPaid.add(dto.getAmount());
+
+        if (newTotalPaid.subtract(invoice.getTotal()).compareTo(PAYMENT_TOLERANCE) > 0) {
+            BigDecimal remaining = invoice.getTotal().subtract(currentPaid).setScale(2, RoundingMode.HALF_UP);
+            throw new BusinessException(String.format("El monto excede el saldo pendiente del comprobante. Saldo actual: S/. %.2f", remaining));
+        }
+
+        InvoicePayment payment = InvoicePayment.builder()
+                .invoice(invoice)
+                .paymentMethod(dto.getPaymentMethod().toLowerCase())
+                .amount(dto.getAmount())
+                .referenceNumber(dto.getReferenceNumber())
+                .build();
+        invoice.getPayments().add(payment);
+        invoice.setPaymentStatus(computePaymentStatus(newTotalPaid, invoice.getTotal()));
+
+        // invoice ya está managed (viene de findById): usar flush() directo en vez de
+        // saveAndFlush() evita un merge() innecesario, que cascadearía la persistencia
+        // del pago nuevo sobre una copia interna en vez de mutar esta misma instancia
+        // (dejando su id/createdAt en null).
+        entityManager.flush();
+
+        return invoiceMapper.toDTO(invoice);
+    }
+
+    private String computePaymentStatus(BigDecimal amountPaid, BigDecimal total) {
+        if (amountPaid.compareTo(BigDecimal.ZERO) <= 0) {
+            return "pendiente";
+        }
+        if (total.subtract(amountPaid).compareTo(PAYMENT_TOLERANCE) <= 0) {
+            return "pagado";
+        }
+        return "parcial";
+    }
+
     private void deductStockFEFO(ProductVariant variant, BigDecimal totalQtyNeeded, InvoiceItem item, User user) {
-        // Fetch lots with status available ordered by expirationDate ASC
-        List<InventoryLot> availableLots = lotRepository.findByVariantIdAndStatusOrderByExpirationDateAsc(variant.getId(), "disponible");
+        List<LotDeduction> deductions = inventoryMovementService.consumeStock(
+                variant,
+                totalQtyNeeded,
+                "venta",
+                "invoice",
+                item.getInvoice().getId(),
+                "Venta registrada comprobante N° " + item.getInvoice().getInvoiceNumber(),
+                user
+        );
 
-        BigDecimal remainingQtyNeeded = totalQtyNeeded;
-        int variantStock = variant.getStock() != null ? variant.getStock() : 0;
-        BigDecimal prevVariantStock = BigDecimal.valueOf(variantStock);
-
-        for (InventoryLot lot : availableLots) {
-            if (remainingQtyNeeded.compareTo(BigDecimal.ZERO) <= 0) break;
-
-            BigDecimal lotQty = BigDecimal.valueOf(lot.getQuantity() != null ? lot.getQuantity() : 0);
-            if (lotQty.compareTo(BigDecimal.ZERO) <= 0) continue;
-
-            BigDecimal qtyToDeductFromLot;
-            if (lotQty.compareTo(remainingQtyNeeded) >= 0) {
-                qtyToDeductFromLot = remainingQtyNeeded;
-                int newLotQty = lotQty.subtract(qtyToDeductFromLot).intValue();
-                lot.setQuantity(newLotQty);
-                if (newLotQty == 0) {
-                    lot.setStatus("agotado");
-                }
-                remainingQtyNeeded = BigDecimal.ZERO;
-            } else {
-                qtyToDeductFromLot = lotQty;
-                lot.setQuantity(0);
-                lot.setStatus("agotado");
-                remainingQtyNeeded = remainingQtyNeeded.subtract(lotQty);
-            }
-
-            lotRepository.save(lot);
-
-            // Record InvoiceItemLot
+        for (LotDeduction deduction : deductions) {
             InvoiceItemLot itemLot = InvoiceItemLot.builder()
                     .invoiceItem(item)
-                    .lot(lot)
-                    .quantity(qtyToDeductFromLot)
+                    .lot(deduction.lot())
+                    .quantity(deduction.quantityDeducted())
                     .build();
             item.getItemLots().add(itemLot);
         }
-
-        // Deduct variant overall stock
-        int qtyDeductedInt = totalQtyNeeded.setScale(0, RoundingMode.CEILING).intValue();
-        int newVariantStockInt = Math.max(0, variantStock - qtyDeductedInt);
-        variant.setStock(newVariantStockInt);
-        variantRepository.save(variant);
-
-        // Record Kardex movement
-        InventoryMovement movement = InventoryMovement.builder()
-                .variant(variant)
-                .lot(item.getItemLots().isEmpty() ? null : item.getItemLots().get(0).getLot())
-                .movementType("venta")
-                .quantity(totalQtyNeeded.negate())
-                .previousStock(prevVariantStock)
-                .newStock(BigDecimal.valueOf(newVariantStockInt))
-                .referenceType("invoice")
-                .referenceId(item.getInvoice().getId())
-                .notes("Venta registrada comprobante N° " + item.getInvoice().getInvoiceNumber())
-                .user(user)
-                .build();
-
-        movementRepository.save(movement);
     }
 
     private String getDefaultSeries(String invoiceType) {

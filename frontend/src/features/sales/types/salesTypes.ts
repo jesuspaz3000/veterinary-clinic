@@ -48,6 +48,8 @@ export interface InvoiceResponse {
   discount: number;
   tax: number;
   total: number;
+  amountPaid: number;
+  balance: number;
   notes: string | null;
   userId: string;
   userName: string;

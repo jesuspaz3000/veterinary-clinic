@@ -3,6 +3,7 @@ package com.veterinaria.backend.sales.controller;
 import com.veterinaria.backend.common.dto.PaginatedResponse;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.sales.dto.CreateInvoiceDTO;
+import com.veterinaria.backend.sales.dto.CreateInvoicePaymentDTO;
 import com.veterinaria.backend.sales.dto.InvoiceDTO;
 import com.veterinaria.backend.sales.dto.InvoiceRequestDTO;
 import com.veterinaria.backend.sales.service.SalesService;
@@ -75,6 +76,13 @@ public class SalesController {
     public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceDTO dto, Authentication authentication) {
         User currentUser = getAuthenticatedUser(authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(salesService.createInvoice(dto, currentUser.getId()));
+    }
+
+    @PostMapping("/{id}/payments")
+    @PreAuthorize("hasAuthority('SALES_UPDATE') or hasAuthority('SALES_CREATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Register payment", description = "Register an additional payment against an invoice's outstanding balance")
+    public ResponseEntity<InvoiceDTO> registerPayment(@PathVariable UUID id, @Valid @RequestBody CreateInvoicePaymentDTO dto) {
+        return ResponseEntity.ok(salesService.registerPayment(id, dto));
     }
 
     private User getAuthenticatedUser(Authentication authentication) {

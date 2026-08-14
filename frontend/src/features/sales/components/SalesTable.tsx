@@ -32,8 +32,17 @@ const INVOICE_TYPES_FILTER = [
 const PAYMENT_STATUS_FILTER = [
   { value: "all", label: "Todos los Estados" },
   { value: "pagado", label: "Pagados" },
+  { value: "parcial", label: "Pago Parcial" },
+  { value: "pendiente", label: "Pendientes" },
   { value: "anulado", label: "Anulados" },
 ];
+
+const STATUS_CHIP: Record<string, { label: string; color: "success" | "error" | "warning" | "info" }> = {
+  pagado: { label: "PAGADO", color: "success" },
+  anulado: { label: "ANULADO", color: "error" },
+  parcial: { label: "PAGO PARCIAL", color: "warning" },
+  pendiente: { label: "PENDIENTE", color: "info" },
+};
 
 export default function SalesTable() {
   const { invoices, totalCount, loading, error, reload, setFilters } = useSales();
@@ -139,12 +148,13 @@ export default function SalesTable() {
       label: "Estado",
       minWidth: 120,
       render: (row) => {
-        const isAnulado = row.paymentStatus.toLowerCase() === "anulado";
+        const status = row.paymentStatus.toLowerCase();
+        const chip = STATUS_CHIP[status] ?? { label: row.paymentStatus.toUpperCase(), color: "info" as const };
         return (
           <Chip
-            label={isAnulado ? "ANULADO" : "PAGADO"}
+            label={chip.label}
             size="small"
-            color={isAnulado ? "error" : "success"}
+            color={chip.color}
             variant="filled"
             sx={{ fontWeight: 700, borderRadius: "6px" }}
           />
@@ -312,7 +322,12 @@ export default function SalesTable() {
       {/* Dialog Modals */}
       <CreateInvoiceDialog open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => void reload()} />
 
-      <InvoiceDetailDialog open={detailOpen} invoice={selectedInvoice} onClose={() => setDetailOpen(false)} />
+      <InvoiceDetailDialog
+        open={detailOpen}
+        invoice={selectedInvoice}
+        onClose={() => setDetailOpen(false)}
+        onChanged={() => void reload()}
+      />
 
       <CreateCreditNoteDialog
         open={creditNoteOpen}

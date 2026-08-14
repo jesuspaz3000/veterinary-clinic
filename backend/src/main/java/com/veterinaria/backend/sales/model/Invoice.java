@@ -59,7 +59,7 @@ public class Invoice {
 
     @Builder.Default
     @Column(name = "payment_status", nullable = false, length = 30)
-    private String paymentStatus = "pagado"; // pendiente, pagado, anulado
+    private String paymentStatus = "pagado"; // pendiente, parcial, pagado, anulado
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;

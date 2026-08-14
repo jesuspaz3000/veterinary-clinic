@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -19,30 +20,49 @@ import {
   TableRow,
 } from "@mui/material";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import { InvoiceResponse } from "../types/salesTypes";
+import RegisterPaymentDialog from "./RegisterPaymentDialog";
 
 interface InvoiceDetailDialogProps {
   open: boolean;
   invoice: InvoiceResponse | null;
   onClose: () => void;
+  onChanged?: () => void;
 }
 
-export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceDetailDialogProps) {
-  if (!invoice) return null;
+const STATUS_CHIP: Record<string, { label: string; color: "success" | "error" | "warning" | "info" }> = {
+  pagado: { label: "PAGADO", color: "success" },
+  anulado: { label: "ANULADO", color: "error" },
+  parcial: { label: "PAGO PARCIAL", color: "warning" },
+  pendiente: { label: "PENDIENTE", color: "info" },
+};
 
-  const isAnulado = invoice.paymentStatus.toLowerCase() === "anulado";
+export default function InvoiceDetailDialog({ open, invoice, onClose, onChanged }: InvoiceDetailDialogProps) {
+  const [currentInvoice, setCurrentInvoice] = useState<InvoiceResponse | null>(invoice);
+  const [prevInvoice, setPrevInvoice] = useState<InvoiceResponse | null>(invoice);
+  const [registerPaymentOpen, setRegisterPaymentOpen] = useState(false);
+
+  if (invoice !== prevInvoice) {
+    setPrevInvoice(invoice);
+    setCurrentInvoice(invoice);
+  }
+
+  if (!currentInvoice) return null;
+  const invoiceData = currentInvoice;
+
+  const status = invoiceData.paymentStatus.toLowerCase();
+  const isAnulado = status === "anulado";
+  const statusChip = STATUS_CHIP[status] ?? { label: invoiceData.paymentStatus.toUpperCase(), color: "info" as const };
+  const canRegisterPayment = !isAnulado && invoiceData.balance > 0.05;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <ReceiptLongRoundedIcon color="primary" /> Comprobante de Venta N° {invoice.invoiceNumber}
+          <ReceiptLongRoundedIcon color="primary" /> Comprobante de Venta N° {invoiceData.invoiceNumber}
         </Box>
-        <Chip
-          label={isAnulado ? "ANULADO" : "PAGADO"}
-          color={isAnulado ? "error" : "success"}
-          sx={{ fontWeight: 700 }}
-        />
+        <Chip label={statusChip.label} color={statusChip.color} sx={{ fontWeight: 700 }} />
       </DialogTitle>
 
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
@@ -53,7 +73,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
               Tipo de Comprobante
             </Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, textTransform: "capitalize" }}>
-              {invoice.invoiceType}
+              {invoiceData.invoiceType}
             </Typography>
           </Box>
 
@@ -62,7 +82,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
               Cliente / Propietario
             </Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {invoice.ownerName ? `${invoice.ownerName} (${invoice.ownerDocumentNumber || "S/D"})` : "Cliente Genérico (Venta Mostrador)"}
+              {invoiceData.ownerName ? `${invoiceData.ownerName} (${invoiceData.ownerDocumentNumber || "S/D"})` : "Cliente Genérico (Venta Mostrador)"}
             </Typography>
           </Box>
 
@@ -71,7 +91,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
               Emisión / Atendido por
             </Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {new Date(invoice.issuedAt).toLocaleString()} ({invoice.userName})
+              {new Date(invoiceData.issuedAt).toLocaleString()} ({invoiceData.userName})
             </Typography>
           </Box>
         </Paper>
@@ -101,7 +121,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
               </TableRow>
             </TableHead>
             <TableBody>
-              {invoice.items.map((item) => (
+              {invoiceData.items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -142,7 +162,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
             <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 700, mb: 1 }}>
               Desglose de Pagos Registrados
             </Typography>
-            {invoice.payments.map((p) => (
+            {invoiceData.payments.map((p) => (
               <Box key={p.id} sx={{ display: "flex", justifyContent: "space-between", py: 0.5, borderBottom: "1px dashed", borderColor: "divider" }}>
                 <Typography variant="body2" sx={{ textTransform: "capitalize" }}>
                   {p.paymentMethod.replace("_", " / ")} {p.referenceNumber ? `(Voucher: ${p.referenceNumber})` : ""}
@@ -160,7 +180,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
                 Subtotal:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                S/. {invoice.subtotal.toFixed(2)}
+                S/. {invoiceData.subtotal.toFixed(2)}
               </Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -168,7 +188,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
                 Descuento Total:
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                S/. {invoice.discount.toFixed(2)}
+                S/. {invoiceData.discount.toFixed(2)}
               </Typography>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
@@ -176,7 +196,7 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
                 IGV (18%):
               </Typography>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                S/. {invoice.tax.toFixed(2)}
+                S/. {invoiceData.tax.toFixed(2)}
               </Typography>
             </Box>
             <Divider sx={{ my: 0.5 }} />
@@ -185,24 +205,56 @@ export default function InvoiceDetailDialog({ open, invoice, onClose }: InvoiceD
                 TOTAL:
               </Typography>
               <Typography variant="h6" color="primary.main" sx={{ fontWeight: 800 }}>
-                S/. {invoice.total.toFixed(2)}
+                S/. {invoiceData.total.toFixed(2)}
               </Typography>
             </Box>
+            {invoiceData.balance > 0.05 && (
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Typography variant="body2" color="warning.main" sx={{ fontWeight: 700 }}>
+                  Saldo pendiente:
+                </Typography>
+                <Typography variant="body2" color="warning.main" sx={{ fontWeight: 700 }}>
+                  S/. {invoiceData.balance.toFixed(2)}
+                </Typography>
+              </Box>
+            )}
           </Paper>
         </Box>
 
-        {invoice.notes && (
+        {invoiceData.notes && (
           <Typography variant="caption" color="text.secondary">
-            <strong>Observaciones:</strong> {invoice.notes}
+            <strong>Observaciones:</strong> {invoiceData.notes}
           </Typography>
         )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
+        {canRegisterPayment && (
+          <Button
+            onClick={() => setRegisterPaymentOpen(true)}
+            variant="outlined"
+            startIcon={<PaymentsRoundedIcon />}
+            sx={{ borderRadius: "8px", textTransform: "none" }}
+          >
+            Registrar Pago
+          </Button>
+        )}
         <Button onClick={onClose} variant="contained" sx={{ borderRadius: "8px", textTransform: "none" }}>
           Cerrar
         </Button>
       </DialogActions>
+
+      {registerPaymentOpen && (
+        <RegisterPaymentDialog
+          open={registerPaymentOpen}
+          invoice={invoiceData}
+          onClose={() => setRegisterPaymentOpen(false)}
+          onSuccess={(updated) => {
+            setCurrentInvoice(updated);
+            onChanged?.();
+          }}
+        />
+      )}
     </Dialog>
   );
 }

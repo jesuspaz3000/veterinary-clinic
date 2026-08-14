@@ -4,6 +4,8 @@ import com.veterinaria.backend.sales.dto.*;
 import com.veterinaria.backend.sales.model.*;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,12 @@ public class InvoiceMapper {
             userName = !fullName.isEmpty() ? fullName : invoice.getUser().getUsername();
         }
 
+        BigDecimal amountPaid = paymentsDTO.stream()
+                .map(InvoicePaymentDTO::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal balance = invoice.getTotal().subtract(amountPaid).setScale(2, RoundingMode.HALF_UP);
+
         return InvoiceDTO.builder()
                 .id(invoice.getId())
                 .series(invoice.getSeries())
@@ -58,6 +66,8 @@ public class InvoiceMapper {
                 .discount(invoice.getDiscount())
                 .tax(invoice.getTax())
                 .total(invoice.getTotal())
+                .amountPaid(amountPaid)
+                .balance(balance)
                 .notes(invoice.getNotes())
                 .userId(invoice.getUser() != null ? invoice.getUser().getId() : null)
                 .userName(userName)

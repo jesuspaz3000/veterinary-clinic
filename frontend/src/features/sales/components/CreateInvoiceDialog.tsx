@@ -260,13 +260,18 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
       return;
     }
 
-    if (Math.abs(remainingToPay) > 0.05) {
-      setErrorMessage(`El total pagado (S/. ${totalPaid.toFixed(2)}) debe ser igual al total del comprobante (S/. ${totalAmount.toFixed(2)}).`);
+    // Un abono parcial (o ningún pago = venta al crédito) es válido; solo se rechaza
+    // si lo cobrado supera el total del comprobante.
+    if (remainingToPay < -0.05) {
+      setErrorMessage(`El total pagado (S/. ${totalPaid.toFixed(2)}) no puede superar el total del comprobante (S/. ${totalAmount.toFixed(2)}).`);
       return;
     }
 
     setSaving(true);
     setErrorMessage(null);
+
+    // Los pagos en 0 (p. ej. la fila inicial sin tocar en una venta al crédito) no se envían.
+    const nonZeroPayments = payments.filter((p) => (p.amount || 0) > 0);
 
     const dto: CreateInvoiceRequest = {
       series: invoiceType === "factura" ? "F001" : invoiceType === "ticket" ? "T001" : "B001",
@@ -275,7 +280,7 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
       globalDiscount,
       notes: notes.trim() || undefined,
       items,
-      payments,
+      payments: nonZeroPayments,
     };
 
     try {
@@ -616,6 +621,17 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
                   S/. {totalPaid.toFixed(2)}
                 </Typography>
               </Box>
+
+              {remainingToPay > 0.05 && (
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Saldo pendiente {totalPaid > 0 ? "(venta parcial)" : "(venta al crédito)"}:
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: "warning.main" }}>
+                    S/. {remainingToPay.toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
             </Paper>
           </Box>
 
