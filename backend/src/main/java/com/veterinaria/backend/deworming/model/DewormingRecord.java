@@ -3,6 +3,7 @@ package com.veterinaria.backend.deworming.model;
 import com.veterinaria.backend.medicalrecord.model.MedicalRecord;
 import com.veterinaria.backend.pet.model.Pet;
 import com.veterinaria.backend.product.model.Product;
+import com.veterinaria.backend.product.model.ProductVariant;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,7 +26,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-@ToString(exclude = {"pet", "medicalRecord", "product", "veterinarian"})
+@ToString(exclude = {"pet", "medicalRecord", "product", "productVariant", "veterinarian"})
 public class DewormingRecord {
 
     @Id
@@ -43,6 +44,13 @@ public class DewormingRecord {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
+
+    // Presentación/lote específico del catálogo del que se descontó stock al aplicar el
+    // antiparasitario. Nullable a nivel de columna porque registros previos a esta
+    // migración no lo tienen; las altas nuevas siempre lo exigen a nivel de DTO/servicio.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_variant_id")
+    private ProductVariant productVariant;
 
     @Column(name = "product_name", nullable = false, length = 150)
     private String productName; // snapshot de product.name al momento de la aplicación

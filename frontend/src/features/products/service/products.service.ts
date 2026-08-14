@@ -38,6 +38,7 @@ function buildProductFormData(request: CreateProductRequest | UpdateProductReque
       formData.append(`variants[${index}].stock`, String(v.stock));
       if (v.minStock !== undefined) formData.append(`variants[${index}].minStock`, String(v.minStock));
       formData.append(`variants[${index}].unitMeasure`, v.unitMeasure);
+      formData.append(`variants[${index}].administrationRoute`, v.administrationRoute);
       if (v.weightOrVolume !== undefined && v.weightOrVolume !== null) {
         formData.append(`variants[${index}].weightOrVolume`, String(v.weightOrVolume));
       }

@@ -22,6 +22,8 @@ public class DewormingRecordDTO {
     private UUID productId;
     private String productName;
     private String productBrand;
+    private UUID productVariantId;
+    private String productVariantName;
     private VeterinarianDTO veterinarian;
     private String dosage;
     private LocalDate applicationDate;

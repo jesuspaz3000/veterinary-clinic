@@ -39,6 +39,7 @@ import {
   BrandResponse,
   CreateProductRequest,
   CreateProductVariantRequest,
+  ADMINISTRATION_ROUTES,
 } from "../types/productTypes";
 import ManageCategoriesDialog from "./ManageCategoriesDialog";
 import ManageBrandsDialog from "./ManageBrandsDialog";
@@ -90,6 +91,7 @@ export default function CreateProductDialog({
       stock: 0,
       minStock: 5,
       unitMeasure: "Unidad",
+      administrationRoute: "oral",
       weightOrVolume: null,
     },
   ]);
@@ -158,6 +160,7 @@ export default function CreateProductDialog({
         stock: 0,
         minStock: 5,
         unitMeasure: "Unidad",
+        administrationRoute: "oral",
         weightOrVolume: null,
       },
     ]);
@@ -197,6 +200,7 @@ export default function CreateProductDialog({
         stock: 0,
         minStock: 5,
         unitMeasure: "Unidad",
+        administrationRoute: "oral",
         weightOrVolume: null,
       },
     ]);
@@ -589,7 +593,7 @@ export default function CreateProductDialog({
                         />
                       </Box>
 
-                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr 1fr" }, gap: 2 }}>
+                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr 1fr 1fr" }, gap: 2 }}>
                         <NumberInput
                           label="Precio Venta (S/.) *"
                           placeholder="0.00"
@@ -635,6 +639,21 @@ export default function CreateProductDialog({
                           {UNIT_MEASURES.map((u) => (
                             <MenuItem key={u} value={u}>
                               {u}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <TextField
+                          select
+                          label="Vía de Administración *"
+                          size="small"
+                          value={variant.administrationRoute}
+                          onChange={(e) => handleVariantChange(index, "administrationRoute", e.target.value)}
+                          disabled={saving}
+                          fullWidth
+                        >
+                          {ADMINISTRATION_ROUTES.map((r) => (
+                            <MenuItem key={r.value} value={r.value}>
+                              {r.label}
                             </MenuItem>
                           ))}
                         </TextField>

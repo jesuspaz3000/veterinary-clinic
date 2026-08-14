@@ -32,6 +32,7 @@ public class ProductVariantMapper {
                 .stock(variant.getStock())
                 .minStock(variant.getMinStock())
                 .unitMeasure(variant.getUnitMeasure())
+                .administrationRoute(variant.getAdministrationRoute())
                 .weightOrVolume(variant.getWeightOrVolume())
                 .isActive(variant.getIsActive())
                 .lots(lotDTOs)

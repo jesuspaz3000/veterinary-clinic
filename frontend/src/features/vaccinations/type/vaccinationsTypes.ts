@@ -7,6 +7,8 @@ export interface VaccinationRecordResponse {
     medicalRecordId: string | null;
     productId: string;
     productName: string | null;
+    productVariantId: string | null;
+    productVariantName: string | null;
     veterinarian: VeterinarianResponse;
     vaccineName: string;
     vaccineBrand: string | null;
@@ -23,6 +25,8 @@ export interface VaccinationRecordRequest {
     petId: string;
     medicalRecordId?: string | null;
     productId: string;
+    /** Solo se admite (y se exige) al crear; una vez aplicada la vacuna, la presentación queda fija. */
+    productVariantId?: string;
     veterinarianId: string;
     batchNumber?: string | null;
     applicationDate: string;

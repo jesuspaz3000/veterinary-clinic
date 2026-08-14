@@ -25,6 +25,7 @@ public class ProductVariantDTO {
     private Integer stock;
     private Integer minStock;
     private String unitMeasure;
+    private String administrationRoute;
     private BigDecimal weightOrVolume;
     private Boolean isActive;
     private List<InventoryLotDTO> lots;

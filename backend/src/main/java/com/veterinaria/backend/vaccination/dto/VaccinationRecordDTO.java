@@ -21,6 +21,8 @@ public class VaccinationRecordDTO {
     private UUID medicalRecordId;
     private UUID productId;
     private String productName;
+    private UUID productVariantId;
+    private String productVariantName;
     private VeterinarianDTO veterinarian;
     private String vaccineName;
     private String vaccineBrand;

@@ -17,7 +17,7 @@ public interface VaccinationRecordService {
 
     VaccinationRecordDTO getVaccinationRecordById(UUID id);
 
-    VaccinationRecordDTO createVaccinationRecord(CreateVaccinationRecordDTO dto);
+    VaccinationRecordDTO createVaccinationRecord(CreateVaccinationRecordDTO dto, UUID currentUserId);
 
     VaccinationRecordDTO updateVaccinationRecord(UUID id, UpdateVaccinationRecordDTO dto);
 

@@ -17,6 +17,8 @@ export interface DewormingRecordResponse {
     productId: string;
     productName: string;
     productBrand: string | null;
+    productVariantId: string | null;
+    productVariantName: string | null;
     veterinarian: VeterinarianResponse;
     dosage: string;
     applicationDate: string;
@@ -32,6 +34,8 @@ export interface DewormingRecordRequest {
     petId: string;
     medicalRecordId?: string | null;
     productId: string;
+    /** Solo se admite (y se exige) al crear; una vez aplicada, la presentación queda fija. */
+    productVariantId?: string;
     veterinarianId: string;
     dosage: string;
     applicationDate: string;

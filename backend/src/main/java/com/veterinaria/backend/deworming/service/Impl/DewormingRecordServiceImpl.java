@@ -14,7 +14,12 @@ import com.veterinaria.backend.medicalrecord.repository.MedicalRecordRepository;
 import com.veterinaria.backend.pet.model.Pet;
 import com.veterinaria.backend.pet.repository.PetRepository;
 import com.veterinaria.backend.product.model.Product;
+import com.veterinaria.backend.product.model.ProductVariant;
 import com.veterinaria.backend.product.repository.ProductRepository;
+import com.veterinaria.backend.product.repository.ProductVariantRepository;
+import com.veterinaria.backend.sales.service.InventoryMovementService;
+import com.veterinaria.backend.user.model.User;
+import com.veterinaria.backend.user.repository.UserRepository;
 import com.veterinaria.backend.veterinarian.model.Veterinarian;
 import com.veterinaria.backend.veterinarian.repository.VeterinarianRepository;
 import jakarta.persistence.criteria.Predicate;
@@ -25,6 +30,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
@@ -39,7 +45,10 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
     private final PetRepository petRepository;
     private final VeterinarianRepository veterinarianRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
     private final MedicalRecordRepository medicalRecordRepository;
+    private final InventoryMovementService inventoryMovementService;
+    private final UserRepository userRepository;
     private final DewormingRecordMapper dewormingRecordMapper;
 
     @Override
@@ -61,7 +70,7 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
 
     @Override
     @Transactional
-    public DewormingRecordDTO createDewormingRecord(CreateDewormingRecordDTO dto) {
+    public DewormingRecordDTO createDewormingRecord(CreateDewormingRecordDTO dto, UUID currentUserId) {
         Pet pet = petRepository.findById(dto.getPetId())
                 .orElseThrow(() -> new NotFoundException("Mascota no encontrada"));
         Veterinarian veterinarian = veterinarianRepository.findById(dto.getVeterinarianId())
@@ -72,10 +81,28 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
         String dewormingType = validateDewormingType(dto.getDewormingType());
         validateDoseDates(dto.getApplicationDate(), dto.getNextApplicationDate());
 
+        // Bloqueo pesimista: evita que dos aplicaciones concurrentes con la misma
+        // presentación validen stock suficiente antes de que ninguna lo haya descontado.
+        ProductVariant variant = productVariantRepository.findByIdForUpdate(dto.getProductVariantId())
+                .orElseThrow(() -> new NotFoundException("Presentación del producto no encontrada"));
+        if (!variant.getProduct().getId().equals(product.getId())) {
+            throw new BusinessException("La presentación seleccionada no corresponde al producto antiparasitario indicado");
+        }
+        if (!Boolean.TRUE.equals(variant.getIsActive())) {
+            throw new BusinessException("La presentación '" + variant.getName() + "' está inactiva");
+        }
+        int currentStock = variant.getStock() != null ? variant.getStock() : 0;
+        if (currentStock < 1) {
+            throw new BusinessException("Sin stock disponible de '" + variant.getName() + "' para aplicar el antiparasitario");
+        }
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new NotFoundException("Usuario autenticado no encontrado"));
+
         DewormingRecord record = DewormingRecord.builder()
                 .pet(pet)
                 .medicalRecord(medicalRecord)
                 .product(product)
+                .productVariant(variant)
                 .productName(product.getName())
                 .productBrand(product.getBrand() != null ? product.getBrand().getName() : null)
                 .veterinarian(veterinarian)
@@ -86,7 +113,19 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
                 .observations(trimToNull(dto.getObservations()))
                 .build();
 
-        return dewormingRecordMapper.toDTO(dewormingRecordRepository.saveAndFlush(record));
+        DewormingRecord saved = dewormingRecordRepository.saveAndFlush(record);
+
+        inventoryMovementService.consumeStock(
+                variant,
+                BigDecimal.ONE,
+                "uso_clinico",
+                "deworming_record",
+                saved.getId(),
+                "Desparasitación aplicada a " + pet.getName(),
+                currentUser
+        );
+
+        return dewormingRecordMapper.toDTO(saved);
     }
 
     @Override
@@ -103,6 +142,12 @@ public class DewormingRecordServiceImpl implements DewormingRecordService {
         MedicalRecord medicalRecord = resolveMedicalRecord(dto.getMedicalRecordId(), pet);
         String dewormingType = validateDewormingType(dto.getDewormingType());
         validateDoseDates(dto.getApplicationDate(), dto.getNextApplicationDate());
+        // La presentación (productVariant) queda fija a la del producto con el que se
+        // descontó stock al crear el registro; no se admite cambiar de producto en una
+        // edición porque dejaría esa referencia inconsistente.
+        if (!record.getProduct().getId().equals(product.getId())) {
+            throw new BusinessException("No se puede cambiar el producto antiparasitario de un registro ya aplicado; crea un nuevo registro en su lugar");
+        }
 
         record.setPet(pet);
         record.setMedicalRecord(medicalRecord);

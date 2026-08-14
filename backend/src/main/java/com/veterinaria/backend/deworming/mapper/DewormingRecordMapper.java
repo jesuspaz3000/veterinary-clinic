@@ -24,6 +24,8 @@ public class DewormingRecordMapper {
                 .productId(record.getProduct().getId())
                 .productName(record.getProductName())
                 .productBrand(record.getProductBrand())
+                .productVariantId(record.getProductVariant() != null ? record.getProductVariant().getId() : null)
+                .productVariantName(record.getProductVariant() != null ? record.getProductVariant().getName() : null)
                 .veterinarian(veterinarianMapper.toDTO(record.getVeterinarian()))
                 .dosage(record.getDosage())
                 .applicationDate(record.getApplicationDate())

@@ -54,6 +54,12 @@ public class ProductVariant {
     @Column(name = "unit_measure", nullable = false, length = 50)
     private String unitMeasure;
 
+    // oral, inyectable, topico, otro
+    @Builder.Default
+    @Column(name = "administration_route", nullable = false, length = 30,
+            columnDefinition = "varchar(30) not null default 'oral'")
+    private String administrationRoute = "oral";
+
     @Column(name = "weight_or_volume", precision = 10, scale = 2)
     private BigDecimal weightOrVolume;
 

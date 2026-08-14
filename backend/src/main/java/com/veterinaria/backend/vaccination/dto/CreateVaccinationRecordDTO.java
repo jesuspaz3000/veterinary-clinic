@@ -24,6 +24,9 @@ public class CreateVaccinationRecordDTO {
     @NotNull(message = "El producto/vacuna es obligatorio")
     private UUID productId;
 
+    @NotNull(message = "La presentación/variante del producto es obligatoria")
+    private UUID productVariantId;
+
     @NotNull(message = "El veterinario es obligatorio")
     private UUID veterinarianId;
 

@@ -2,6 +2,9 @@ package com.veterinaria.backend.vaccination.controller;
 
 import com.veterinaria.backend.common.dto.MessageResponse;
 import com.veterinaria.backend.common.dto.PaginatedResponse;
+import com.veterinaria.backend.common.exception.NotFoundException;
+import com.veterinaria.backend.user.model.User;
+import com.veterinaria.backend.user.repository.UserRepository;
 import com.veterinaria.backend.vaccination.dto.CreateVaccinationRecordDTO;
 import com.veterinaria.backend.vaccination.dto.UpdateVaccinationRecordDTO;
 import com.veterinaria.backend.vaccination.dto.VaccinationRecordDTO;
@@ -18,6 +21,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -31,6 +35,7 @@ import java.util.UUID;
 public class VaccinationRecordController {
 
     private final VaccinationRecordService vaccinationRecordService;
+    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasAuthority('VACCINATIONS_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -69,8 +74,9 @@ public class VaccinationRecordController {
     @PostMapping
     @PreAuthorize("hasAuthority('VACCINATIONS_CREATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
     @Operation(summary = "Create vaccination record", description = "Register a new vaccination applied to a pet")
-    public ResponseEntity<VaccinationRecordDTO> createVaccinationRecord(@Valid @RequestBody CreateVaccinationRecordDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(vaccinationRecordService.createVaccinationRecord(dto));
+    public ResponseEntity<VaccinationRecordDTO> createVaccinationRecord(@Valid @RequestBody CreateVaccinationRecordDTO dto, Authentication authentication) {
+        User currentUser = getAuthenticatedUser(authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(vaccinationRecordService.createVaccinationRecord(dto, currentUser.getId()));
     }
 
     @PutMapping("/{id}")
@@ -94,5 +100,12 @@ public class VaccinationRecordController {
     public ResponseEntity<MessageResponse> reactivateVaccinationRecord(@PathVariable UUID id) {
         vaccinationRecordService.reactivateVaccinationRecord(id);
         return ResponseEntity.ok(new MessageResponse("Registro de vacunación reactivado exitosamente"));
+    }
+
+    private User getAuthenticatedUser(Authentication authentication) {
+        String principal = authentication.getName();
+        return userRepository.findByEmail(principal)
+                .or(() -> userRepository.findByUsername(principal))
+                .orElseThrow(() -> new NotFoundException("Usuario autenticado no encontrado."));
     }
 }

@@ -43,6 +43,10 @@ public class CreateProductVariantDTO {
     @NotBlank(message = "La unidad de medida es obligatoria")
     private String unitMeasure;
 
+    // oral, inyectable, topico, otro
+    @NotBlank(message = "La vía de administración es obligatoria")
+    private String administrationRoute;
+
     private BigDecimal weightOrVolume;
 
     private List<CreateInventoryLotDTO> lots;

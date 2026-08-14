@@ -17,7 +17,7 @@ public interface DewormingRecordService {
 
     DewormingRecordDTO getDewormingRecordById(UUID id);
 
-    DewormingRecordDTO createDewormingRecord(CreateDewormingRecordDTO dto);
+    DewormingRecordDTO createDewormingRecord(CreateDewormingRecordDTO dto, UUID currentUserId);
 
     DewormingRecordDTO updateDewormingRecord(UUID id, UpdateDewormingRecordDTO dto);
 

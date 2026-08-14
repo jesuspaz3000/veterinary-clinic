@@ -43,6 +43,13 @@ export interface CreateInventoryLotRequest {
   costPrice?: number | null;
 }
 
+export const ADMINISTRATION_ROUTES = [
+  { value: "oral", label: "Oral" },
+  { value: "inyectable", label: "Inyectable" },
+  { value: "topico", label: "Tópico" },
+  { value: "otro", label: "Otro" },
+] as const;
+
 export interface ProductVariantResponse {
   id: string;
   productId: string;
@@ -54,6 +61,7 @@ export interface ProductVariantResponse {
   stock: number;
   minStock: number;
   unitMeasure: string;
+  administrationRoute: string;
   weightOrVolume: number | null;
   isActive: boolean;
   lots: InventoryLotResponse[];
@@ -71,6 +79,7 @@ export interface CreateProductVariantRequest {
   stock: number;
   minStock?: number;
   unitMeasure: string;
+  administrationRoute: string;
   weightOrVolume?: number | null;
   lots?: CreateInventoryLotRequest[];
 }

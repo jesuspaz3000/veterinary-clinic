@@ -23,6 +23,8 @@ public class VaccinationRecordMapper {
                 .medicalRecordId(record.getMedicalRecord() != null ? record.getMedicalRecord().getId() : null)
                 .productId(record.getProduct().getId())
                 .productName(record.getProduct().getName())
+                .productVariantId(record.getProductVariant() != null ? record.getProductVariant().getId() : null)
+                .productVariantName(record.getProductVariant() != null ? record.getProductVariant().getName() : null)
                 .veterinarian(veterinarianMapper.toDTO(record.getVeterinarian()))
                 .vaccineName(record.getVaccineName())
                 .vaccineBrand(record.getVaccineBrand())

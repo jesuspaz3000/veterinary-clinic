@@ -1,6 +1,7 @@
 package com.veterinaria.backend.product.service.Impl;
 
 import com.veterinaria.backend.common.dto.PaginatedResponse;
+import com.veterinaria.backend.common.exception.BusinessException;
 import com.veterinaria.backend.common.exception.ConflictException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.common.storage.StorageFolder;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -301,6 +303,7 @@ public class ProductServiceImpl implements ProductService {
         variant.setStock(newStock);
         variant.setMinStock(varDto.getMinStock() != null ? varDto.getMinStock() : 5);
         variant.setUnitMeasure(varDto.getUnitMeasure().trim());
+        variant.setAdministrationRoute(validateAdministrationRoute(varDto.getAdministrationRoute()));
         variant.setWeightOrVolume(varDto.getWeightOrVolume());
         variant.setIsActive(true);
 
@@ -393,6 +396,11 @@ public class ProductServiceImpl implements ProductService {
                     }
                 }
             }
+        } else {
+            // El formulario de Productos no gestiona lotes explícitos: para que el
+            // stock declarado aquí sea realmente descontable (FEFO en ventas/vacunación/
+            // desparasitación), se mantiene un lote genérico sincronizado con el stock.
+            syncAutoLot(savedVariant, newStock, varDto.getCostPrice());
         }
 
         if (product.getVariants() == null) {
@@ -403,5 +411,43 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return savedVariant;
+    }
+
+    private static final Set<String> ADMINISTRATION_ROUTES = Set.of("oral", "inyectable", "topico", "otro");
+
+    private String validateAdministrationRoute(String administrationRoute) {
+        String normalized = administrationRoute == null ? "" : administrationRoute.trim().toLowerCase();
+        if (!ADMINISTRATION_ROUTES.contains(normalized)) {
+            throw new BusinessException("Vía de administración inválida. Valores permitidos: " + String.join(", ", ADMINISTRATION_ROUTES));
+        }
+        return normalized;
+    }
+
+    // Lote genérico usado cuando el producto se crea/edita sin lotes explícitos.
+    // Fecha de vencimiento lejana como centinela: no representa un vencimiento real,
+    // solo asegura que este lote se consuma (FEFO) después de cualquier lote con
+    // fecha real más próxima.
+    private static final String AUTO_LOT_NUMBER = "AUTO";
+    private static final LocalDate AUTO_LOT_EXPIRATION = LocalDate.of(2099, 12, 31);
+
+    private void syncAutoLot(ProductVariant variant, int newStock, BigDecimal costPrice) {
+        Optional<InventoryLot> existingLot = lotRepository.findByVariantIdAndLotNumber(variant.getId(), AUTO_LOT_NUMBER);
+        if (existingLot.isPresent()) {
+            InventoryLot lot = existingLot.get();
+            lot.setQuantity(newStock);
+            lot.setCostPrice(costPrice != null ? costPrice : lot.getCostPrice());
+            lot.setStatus(newStock > 0 ? "disponible" : "agotado");
+            lotRepository.save(lot);
+        } else if (newStock > 0) {
+            InventoryLot lot = InventoryLot.builder()
+                    .variant(variant)
+                    .lotNumber(AUTO_LOT_NUMBER)
+                    .expirationDate(AUTO_LOT_EXPIRATION)
+                    .quantity(newStock)
+                    .costPrice(costPrice)
+                    .status("disponible")
+                    .build();
+            lotRepository.save(lot);
+        }
     }
 }

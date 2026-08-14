@@ -23,7 +23,6 @@ import { PetResponse } from "@/features/pets/type/petsTypes";
 import { VeterinariansService } from "@/features/veterinarians/service/veterinarians.service";
 import { VeterinarianResponse } from "@/features/veterinarians/type/veterinariansTypes";
 import { ProductsService } from "@/features/products/service/products.service";
-import { ProductResponse } from "@/features/products/types/productTypes";
 import { MedicalRecordsService } from "@/features/medical-records/service/medicalRecords.service";
 import { MedicalRecordResponse, RECORD_TYPE_LABELS } from "@/features/medical-records/type/medicalRecordsTypes";
 import { getUserDisplayName } from "@/features/appointments/utils/professionals";
@@ -37,6 +36,14 @@ interface DewormingFormDialogProps {
   recordId?: string | null;
 }
 
+interface ProductVariantOption {
+  productId: string;
+  productName: string;
+  variantId: string;
+  variantName: string;
+  stock: number;
+}
+
 export default function DewormingFormDialog({
   open,
   onClose,
@@ -47,7 +54,7 @@ export default function DewormingFormDialog({
 
   const [pets, setPets] = useState<PetResponse[]>([]);
   const [vets, setVets] = useState<VeterinarianResponse[]>([]);
-  const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [variantOptions, setVariantOptions] = useState<ProductVariantOption[]>([]);
   const [petMedicalRecords, setPetMedicalRecords] = useState<MedicalRecordResponse[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingRecord, setLoadingRecord] = useState(isEditing);
@@ -55,7 +62,7 @@ export default function DewormingFormDialog({
 
   const [selectedPet, setSelectedPet] = useState<PetResponse | null>(null);
   const [selectedVet, setSelectedVet] = useState<VeterinarianResponse | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<ProductResponse | null>(null);
+  const [selectedVariantOption, setSelectedVariantOption] = useState<ProductVariantOption | null>(null);
   const [selectedMedicalRecord, setSelectedMedicalRecord] = useState<MedicalRecordResponse | null>(null);
   const [pendingMedicalRecordId, setPendingMedicalRecordId] = useState<string | null>(null);
   const [dewormingType, setDewormingType] = useState<string>("interna");
@@ -84,18 +91,37 @@ export default function DewormingFormDialog({
         ]);
         setPets(petsData || []);
         setVets(vetsData?.results || []);
-        setProducts(productsData?.results || []);
+
+        const options: ProductVariantOption[] = [];
+        (productsData?.results || []).forEach((prod) => {
+          (prod.variants || []).forEach((v) => {
+            if (!v.isActive) return;
+            options.push({
+              productId: prod.id,
+              productName: prod.brand ? `${prod.name} (${prod.brand.name})` : prod.name,
+              variantId: v.id,
+              variantName: v.name,
+              stock: v.stock,
+            });
+          });
+        });
+        setVariantOptions(options);
 
         if (recordId) {
           setLoadingRecord(true);
           const data = await DewormingService.getDewormingRecordById(recordId);
           setSelectedPet(data.pet);
           setSelectedVet(data.veterinarian);
-          setSelectedProduct({
-            id: data.productId,
-            name: data.productName,
-            brand: data.productBrand ? { id: "", name: data.productBrand, description: null, createdAt: "", updatedAt: null } : null,
-          } as ProductResponse);
+          const matchedVariant = data.productVariantId
+            ? options.find((o) => o.variantId === data.productVariantId) ?? {
+                productId: data.productId,
+                productName: data.productBrand ? `${data.productName} (${data.productBrand})` : data.productName,
+                variantId: data.productVariantId,
+                variantName: data.productVariantName ?? "",
+                stock: 0,
+              }
+            : null;
+          setSelectedVariantOption(matchedVariant);
           setDewormingType(data.dewormingType);
           setDosage(data.dosage ?? "");
           setApplicationDate(dayjs(data.applicationDate));
@@ -154,7 +180,7 @@ export default function DewormingFormDialog({
       setErrorMessage("Debes seleccionar el veterinario responsable.");
       return;
     }
-    if (!selectedProduct) {
+    if (!selectedVariantOption) {
       setErrorMessage("Debes seleccionar el producto antiparasitario aplicado.");
       return;
     }
@@ -177,7 +203,8 @@ export default function DewormingFormDialog({
     const dto: DewormingRecordRequest = {
       petId: selectedPet.id,
       medicalRecordId: selectedMedicalRecord?.id ?? null,
-      productId: selectedProduct.id,
+      productId: selectedVariantOption.productId,
+      ...(!isEditing ? { productVariantId: selectedVariantOption.variantId } : {}),
       veterinarianId: selectedVet.id,
       dosage: dosage.trim(),
       applicationDate: applicationDate.format("YYYY-MM-DD"),
@@ -282,21 +309,33 @@ export default function DewormingFormDialog({
             Datos de la desparasitación
           </Typography>
 
-          <Autocomplete
-            options={products}
-            value={selectedProduct}
-            onChange={(_e, newValue) => setSelectedProduct(newValue)}
-            getOptionLabel={(option) =>
-              option.brand ? `${option.name} (${option.brand.name})` : option.name
-            }
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            loading={loadingOptions}
-            disabled={saving}
-            fullWidth
-            renderInput={(params) => (
-              <TextField {...params} label="Producto antiparasitario" required />
-            )}
-          />
+          {isEditing ? (
+            <TextField
+              label="Producto antiparasitario"
+              value={
+                selectedVariantOption
+                  ? `${selectedVariantOption.productName} — ${selectedVariantOption.variantName}`
+                  : ""
+              }
+              disabled
+              fullWidth
+              helperText="El producto/presentación queda fijo una vez aplicado (ya se descontó del stock)."
+            />
+          ) : (
+            <Autocomplete
+              options={variantOptions}
+              value={selectedVariantOption}
+              onChange={(_e, newValue) => setSelectedVariantOption(newValue)}
+              getOptionLabel={(option) => `${option.productName} — ${option.variantName} (stock: ${option.stock})`}
+              isOptionEqualToValue={(option, value) => option.variantId === value.variantId}
+              loading={loadingOptions}
+              disabled={saving}
+              fullWidth
+              renderInput={(params) => (
+                <TextField {...params} label="Producto antiparasitario" placeholder="Busca por producto..." required />
+              )}
+            />
+          )}
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
             <TextField
