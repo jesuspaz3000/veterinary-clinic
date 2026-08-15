@@ -22,6 +22,8 @@ public interface PetRepository extends JpaRepository<Pet, UUID>, JpaSpecificatio
 
     long countByOwnerIdAndStatus(UUID ownerId, String status);
 
+    long countByStatus(String status);
+
     List<Pet> findByOwnerIdAndStatus(UUID ownerId, String status);
 
     // Usados únicamente por el listado sin paginar (/pets/all, para selects/dropdowns):

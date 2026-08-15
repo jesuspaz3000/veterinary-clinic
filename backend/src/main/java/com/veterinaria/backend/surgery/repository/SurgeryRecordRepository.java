@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +15,8 @@ import java.util.UUID;
 public interface SurgeryRecordRepository extends JpaRepository<SurgeryRecord, UUID>, JpaSpecificationExecutor<SurgeryRecord> {
 
     List<SurgeryRecord> findByPetIdAndIsActiveTrueOrderBySurgeryDateDesc(UUID petId);
+
+    long countBySurgeryDateBetweenAndIsActiveTrue(Instant start, Instant end);
 
     // Cirugías activas y no terminales (programada/en_proceso) donde el veterinario
     // participa como cirujano principal o como asistente; usado para detectar choques de horario.

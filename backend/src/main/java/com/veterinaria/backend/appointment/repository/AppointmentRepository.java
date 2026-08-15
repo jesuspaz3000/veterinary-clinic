@@ -17,6 +17,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
 
     List<Appointment> findByPetIdOrderByDateDescStartTimeDesc(UUID petId);
 
+    long countByDate(LocalDate date);
+
+    List<Appointment> findByDateBetweenOrderByDateAsc(LocalDate start, LocalDate end);
+
     @Query("SELECT COUNT(a) FROM Appointment a WHERE a.veterinarian.id = :veterinarianId " +
             "AND a.date = :date AND a.status <> 'cancelada' AND a.id <> :excludeId " +
             "AND a.startTime < :endTime AND a.endTime > :startTime")

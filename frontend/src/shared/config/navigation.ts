@@ -30,6 +30,7 @@ export const navItems: NavItem[] = [
         label: "Dashboard",
         href: "/dashboard",
         icon: DashboardRoundedIcon,
+        permission: PERMISSIONS.DASHBOARD.READ,
     },
     {
         label: "Dueños / Clientes",

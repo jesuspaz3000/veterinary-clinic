@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,4 +19,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID>, JpaSpec
     Optional<Integer> findMaxCorrelativeBySeries(@Param("series") String series);
 
     boolean existsByInvoiceNumber(String invoiceNumber);
+
+    List<Invoice> findByIssuedAtBetween(Instant start, Instant end);
+
+    long countByPaymentStatusIn(List<String> paymentStatuses);
 }

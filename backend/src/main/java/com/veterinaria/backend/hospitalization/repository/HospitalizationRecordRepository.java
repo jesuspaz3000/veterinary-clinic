@@ -13,6 +13,8 @@ public interface HospitalizationRecordRepository extends JpaRepository<Hospitali
 
     List<HospitalizationRecord> findByPetIdAndIsActiveTrueOrderByAdmissionDateDesc(UUID petId);
 
+    long countByStatusAndIsActiveTrue(String status);
+
     // Evita que una misma mascota tenga dos hospitalizaciones activas simultáneas
     boolean existsByPetIdAndStatusAndIsActiveTrue(UUID petId, String status);
     boolean existsByPetIdAndStatusAndIsActiveTrueAndIdNot(UUID petId, String status, UUID excludeId);

@@ -1,4 +1,7 @@
 export const PERMISSIONS = {
+    DASHBOARD: {
+        READ: "DASHBOARD_READ"
+    },
     USERS: {
         CREATE: "USERS_CREATE",
         READ: "USERS_READ",

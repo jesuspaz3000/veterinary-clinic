@@ -18,6 +18,8 @@ public interface OwnerRepository extends JpaRepository<Owner, UUID>, JpaSpecific
 
     Optional<Owner> findByDocumentNumber(String documentNumber);
 
+    long countByIsActiveTrue();
+
     // Usados únicamente por el listado sin paginar (/owners/all, para selects/dropdowns):
     // siempre solo activos, no participan del filtro de estado de la tabla paginada.
     @Query("SELECT o FROM Owner o WHERE o.isActive = true AND (" +

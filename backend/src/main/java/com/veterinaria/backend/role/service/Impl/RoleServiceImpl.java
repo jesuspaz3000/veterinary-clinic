@@ -224,6 +224,7 @@ public class RoleServiceImpl implements RoleService{
         Map<String, List<String>> defaultRolePermissions = new LinkedHashMap<>();
         defaultRolePermissions.put(RoleNames.SUPERADMIN, List.of()); // Manejado aparte con assignAllPermissionsToSuperAdmin()
         defaultRolePermissions.put(RoleNames.VETERINARIAN, List.of(
+                "DASHBOARD_READ",
                 "VETERINARIANS_READ", "OWNERS_READ", "PETS_READ", "PRODUCTS_READ",
                 "APPOINTMENTS_READ", "APPOINTMENTS_UPDATE",
                 "SCHEDULES_READ",
@@ -234,6 +235,7 @@ public class RoleServiceImpl implements RoleService{
                 "HOSPITALIZATION_CREATE", "HOSPITALIZATION_READ", "HOSPITALIZATION_UPDATE"
         ));
         defaultRolePermissions.put(RoleNames.ADMIN, List.of(
+                "DASHBOARD_READ",
                 "USERS_CREATE", "USERS_READ", "USERS_UPDATE", "USERS_DELETE",
                 "VETERINARIANS_CREATE", "VETERINARIANS_READ", "VETERINARIANS_UPDATE", "VETERINARIANS_DELETE",
                 "GROOMING_CREATE", "GROOMING_READ", "GROOMING_UPDATE", "GROOMING_DELETE",
@@ -250,10 +252,12 @@ public class RoleServiceImpl implements RoleService{
                 "HOSPITALIZATION_CREATE", "HOSPITALIZATION_READ", "HOSPITALIZATION_UPDATE", "HOSPITALIZATION_DELETE"
         ));
         defaultRolePermissions.put(RoleNames.GROOMING, List.of(
+                "DASHBOARD_READ",
                 "GROOMING_READ", "OWNERS_READ", "PETS_READ",
                 "SCHEDULES_READ"
         ));
         defaultRolePermissions.put(RoleNames.ADMINISTRATIVE, List.of(
+                "DASHBOARD_READ",
                 "ADMINISTRATIVE_READ", "OWNERS_READ", "PETS_READ", "PRODUCTS_READ",
                 "APPOINTMENTS_CREATE", "APPOINTMENTS_READ", "APPOINTMENTS_UPDATE", "APPOINTMENTS_DELETE",
                 "SCHEDULES_CREATE", "SCHEDULES_READ", "SCHEDULES_UPDATE", "SCHEDULES_DELETE",
@@ -301,6 +305,7 @@ public class RoleServiceImpl implements RoleService{
         log.info("Initializing default permissions");
 
         Map<String, List<String>> moduleActions = new LinkedHashMap<>();
+        moduleActions.put("DASHBOARD", List.of("READ"));
         moduleActions.put("USERS", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("ROLES", List.of("CREATE", "READ", "UPDATE", "DELETE"));
         moduleActions.put("PERMISSIONS", List.of("READ"));
@@ -346,6 +351,8 @@ public class RoleServiceImpl implements RoleService{
 
     private String getLabelEs(String module, String action){
         return switch (module + "_" + action){
+            case "DASHBOARD_READ" -> "Ver dashboard";
+
             case "USERS_CREATE" -> "Crear usuarios";
             case "USERS_READ" -> "Ver usuarios";
             case "USERS_UPDATE" -> "Actualizar usuarios";

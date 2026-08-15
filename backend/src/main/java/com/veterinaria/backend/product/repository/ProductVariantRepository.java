@@ -26,4 +26,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM ProductVariant v WHERE v.id = :id")
     Optional<ProductVariant> findByIdForUpdate(@Param("id") UUID id);
+
+    @Query("SELECT COUNT(v) FROM ProductVariant v WHERE v.isActive = true AND v.stock <= v.minStock")
+    long countLowStock();
 }
