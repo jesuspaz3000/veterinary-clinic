@@ -10,7 +10,9 @@ import {
   Button,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { VeterinariansService } from "../service/veterinarians.service";
 import { VeterinarianResponse } from "../type/veterinariansTypes";
 
@@ -57,7 +59,20 @@ export default function ReactivateVeterinarian({
 
   return (
     <Dialog open={open} onClose={reactivating ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>¿Reactivar Veterinario?</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, pr: 5 }}>¿Reactivar Veterinario?</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={reactivating}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           ¿Deseas reactivar a <strong>{displayName}</strong> (Lic. {veterinarian?.licenseNumber})? Volverá a

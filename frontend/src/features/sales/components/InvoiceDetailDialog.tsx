@@ -18,10 +18,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  IconButton,
 } from "@mui/material";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
 import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { InvoiceResponse } from "../types/salesTypes";
 import RegisterPaymentDialog from "./RegisterPaymentDialog";
 import { printInvoice } from "../utils/printInvoice";
@@ -60,12 +62,24 @@ export default function InvoiceDetailDialog({ open, invoice, onClose, onChanged 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <DialogTitle sx={{ fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center", pr: 6 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <ReceiptLongRoundedIcon color="primary" /> Comprobante de Venta N° {invoiceData.invoiceNumber}
         </Box>
         <Chip label={statusChip.label} color={statusChip.color} sx={{ fontWeight: 700 }} />
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
 
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
         {/* Header Metadata */}

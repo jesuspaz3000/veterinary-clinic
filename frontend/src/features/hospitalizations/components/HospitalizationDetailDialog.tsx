@@ -22,6 +22,7 @@ import {
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { HospitalizationsService } from "../service/hospitalizations.service";
 import {
   HospitalizationRecordResponse,
@@ -205,7 +206,19 @@ export default function HospitalizationDetailDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Detalle de Hospitalización</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, pr: 5 }}>Detalle de Hospitalización</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
         {loading && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>

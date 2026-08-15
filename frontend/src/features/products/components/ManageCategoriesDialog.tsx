@@ -162,6 +162,19 @@ export default function ManageCategoriesDialog({
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Catálogo de Categorías de Productos</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1 }}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 

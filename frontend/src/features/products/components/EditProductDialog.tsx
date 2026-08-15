@@ -29,6 +29,7 @@ import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
 import NumberInput from "@/shared/components/NumberInput";
 import { ProductsService } from "../service/products.service";
@@ -261,7 +262,15 @@ export default function EditProductDialog({
   return (
     <>
       <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Editar Producto de Inventario / Farmacia</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, pr: 5 }}>Editar Producto de Inventario / Farmacia</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={onClose}
+          disabled={saving}
+          sx={{ position: "absolute", right: 12, top: 12, color: "text.secondary" }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <form noValidate onSubmit={(e) => void handleSubmit(e)}>
           <DialogContent sx={{ pt: 1.5, pb: 3 }}>
             {errorMessage && <Alert severity="error" sx={{ mb: 2.5 }}>{errorMessage}</Alert>}
@@ -510,13 +519,28 @@ export default function EditProductDialog({
                   <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 700 }}>
                     Presentaciones / Variantes del Producto ({variants.length})
                   </Typography>
+                  <Tooltip title="Agregar Presentación">
+                    <IconButton
+                      onClick={handleAddVariant}
+                      disabled={saving}
+                      sx={{
+                        display: { xs: "inline-flex", sm: "none" },
+                        border: "1px solid",
+                        borderColor: "primary.main",
+                        color: "primary.main",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <AddRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<AddRoundedIcon />}
                     onClick={handleAddVariant}
                     disabled={saving}
-                    sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 600 }}
+                    sx={{ display: { xs: "none", sm: "inline-flex" }, borderRadius: "8px", textTransform: "none", fontWeight: 600 }}
                   >
                     Agregar Presentación
                   </Button>

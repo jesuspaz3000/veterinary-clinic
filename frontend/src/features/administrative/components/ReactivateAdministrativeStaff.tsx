@@ -10,7 +10,9 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { AdministrativeService } from "../service/administrative.service";
 import { AdministrativeStaffResponse } from "../type/administrativeTypes";
 
@@ -50,11 +52,24 @@ export default function ReactivateAdministrativeStaff({ open, staff, onClose, on
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
+      <DialogTitle sx={{ pr: 5 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Reactivar Personal Administrativo
         </Typography>
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={handleClose}
+        disabled={reactivating}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         {errorMessage && (
           <Alert severity="error" sx={{ mb: 2 }}>

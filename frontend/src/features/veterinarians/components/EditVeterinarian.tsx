@@ -25,6 +25,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PhoneInput from "@/shared/components/PhoneInput";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
 import { VeterinariansService } from "../service/veterinarians.service";
@@ -162,6 +163,19 @@ export default function EditVeterinarian({
     <>
       <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>Editar Veterinario</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={onClose}
+          disabled={saving}
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            color: "text.secondary",
+          }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <form noValidate onSubmit={(e) => void handleSubmit(e)}>
           <DialogContent sx={{ pt: 1.5, pb: 3 }}>
             {errorMessage && <Alert severity="error" sx={{ mb: 2.5 }}>{errorMessage}</Alert>}

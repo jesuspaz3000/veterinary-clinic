@@ -10,7 +10,9 @@ import {
   Button,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { UsersService } from "../service/users.service";
 import { UserResponse } from "../type/usersTypes";
 
@@ -48,6 +50,19 @@ export default function DeleteUser({ open, user, onClose, onSuccess }: DeleteUse
   return (
     <Dialog open={open} onClose={deleting ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>¿Eliminar Usuario?</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={deleting}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           ¿Estás seguro de que deseas eliminar el usuario <strong>{user?.username}</strong>? 

@@ -29,6 +29,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NumberInput from "@/shared/components/NumberInput";
 import { OwnerService } from "@/features/owners/service/owners.service";
 import { OwnerResponse } from "@/features/owners/type/ownersTypes";
@@ -305,9 +306,22 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
 
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1, pr: 5 }}>
         <ShoppingCartRoundedIcon color="primary" /> Nueva Venta / Punto de Venta (POS)
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
 
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>

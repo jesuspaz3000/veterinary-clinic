@@ -10,7 +10,9 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { AdministrativeService } from "../service/administrative.service";
 import { AdministrativeStaffResponse } from "../type/administrativeTypes";
 
@@ -55,6 +57,19 @@ export default function DeleteAdministrativeStaff({ open, staff, onClose, onSucc
           Eliminar Personal Administrativo
         </Typography>
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={handleClose}
+        disabled={deleting}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         {errorMessage && (
           <Alert severity="error" sx={{ mb: 2 }}>

@@ -17,7 +17,9 @@ import {
   Alert,
   Paper,
   Divider,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { RolesService } from "../services/roles.service";
 import { PermissionsService } from "../services/permissions.service";
 import { Permission, Role, RoleCreateUpdateDTO } from "../types/rolesTypes";
@@ -139,7 +141,20 @@ export default function EditRole({ open, role, onClose, onSuccess }: EditRolePro
 
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Editar Rol: {role?.name}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, pr: 5 }}>Editar Rol: {role?.name}</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3, pt: 1, minHeight: 200 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

@@ -13,7 +13,9 @@ import {
   CircularProgress,
   Alert,
   MenuItem,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PhoneInput from "@/shared/components/PhoneInput";
 import { OwnerService } from "../service/owners.service";
 import { OwnerResponse, OwnerUpdateRequest } from "../type/ownersTypes";
@@ -90,6 +92,19 @@ export default function EditOwnerDialog({ open, owner, onClose, onSuccess }: Edi
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Editar Cliente / Propietario</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

@@ -10,7 +10,9 @@ import {
   Button,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { RolesService } from "../services/roles.service";
 import { Role } from "../types/rolesTypes";
 
@@ -48,6 +50,19 @@ export default function ReactivateRole({ open, role, onClose, onSuccess }: React
   return (
     <Dialog open={open} onClose={reactivating ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>¿Reactivar Rol?</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={reactivating}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           ¿Estás seguro de que deseas reactivar el rol <strong>{role?.name}</strong>?

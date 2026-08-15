@@ -10,7 +10,9 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { DewormingService } from "../service/deworming.service";
 import { DewormingRecordResponse } from "../type/dewormingTypes";
 
@@ -49,6 +51,19 @@ export default function DeleteDewormingDialog({
   return (
     <Dialog open={open} onClose={deleting ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Eliminar Desparasitación</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={deleting}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 

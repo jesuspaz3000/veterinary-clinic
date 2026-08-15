@@ -14,7 +14,9 @@ import {
   Autocomplete,
   Divider,
   Typography,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { renderMultiSectionDigitalClockTimeView } from "@mui/x-date-pickers/timeViewRenderers";
 import dayjs, { Dayjs } from "dayjs";
@@ -216,6 +218,19 @@ export default function CreateAppointmentDialog({
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Nueva Cita</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

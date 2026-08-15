@@ -15,8 +15,10 @@ import {
   Divider,
   Typography,
   MenuItem,
+  IconButton,
 } from "@mui/material";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { renderMultiSectionDigitalClockTimeView } from "@mui/x-date-pickers/timeViewRenderers";
 import dayjs, { Dayjs } from "dayjs";
 import { PetService } from "@/features/pets/service/pets.service";
@@ -250,6 +252,19 @@ export default function EditAppointmentDialog({
   return (
     <Dialog open={open} onClose={saving || loadingData ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Editar Cita</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving || loadingData}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
@@ -459,6 +474,21 @@ export default function EditAppointmentDialog({
         disableRestoreFocus
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Cita completada</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={() => {
+            setShowRecordPrompt(false);
+            onClose();
+          }}
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            color: "text.secondary",
+          }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
             La cita se marcó como completada. ¿Deseas crear ahora el registro médico correspondiente?

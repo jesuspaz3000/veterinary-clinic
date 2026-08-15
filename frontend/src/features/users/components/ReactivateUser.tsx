@@ -10,7 +10,9 @@ import {
   Button,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { UsersService } from "../service/users.service";
 import { UserResponse } from "../type/usersTypes";
 
@@ -48,6 +50,19 @@ export default function ReactivateUser({ open, user, onClose, onSuccess }: React
   return (
     <Dialog open={open} onClose={reactivating ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Reactivar Usuario</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={reactivating}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           ¿Deseas reactivar al usuario <strong>{user?.username}</strong>? Volverá a tener acceso al

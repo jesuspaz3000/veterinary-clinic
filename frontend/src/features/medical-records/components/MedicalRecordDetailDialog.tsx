@@ -22,6 +22,7 @@ import {
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { MedicalRecordsService } from "../service/medicalRecords.service";
 import {
   MedicalRecordResponse,
@@ -181,7 +182,19 @@ export default function MedicalRecordDetailDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Detalle del Registro Médico</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, pr: 5 }}>Detalle del Registro Médico</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
         {loading && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>

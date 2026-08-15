@@ -12,7 +12,9 @@ import {
   CircularProgress,
   Alert,
   Typography,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NumberInput from "@/shared/components/NumberInput";
 import { SalesService } from "../service/sales.service";
 import { InvoiceResponse } from "../types/salesTypes";
@@ -66,6 +68,19 @@ export default function RegisterPaymentDialog({ open, invoice, onClose, onSucces
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Registrar Pago</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 

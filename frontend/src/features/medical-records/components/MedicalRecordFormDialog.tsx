@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { PetService } from "@/features/pets/service/pets.service";
@@ -273,6 +274,19 @@ export default function MedicalRecordFormDialog({
       <DialogTitle sx={{ fontWeight: 700 }}>
         {isEditing ? "Editar Registro Médico" : "Nuevo Registro Médico"}
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

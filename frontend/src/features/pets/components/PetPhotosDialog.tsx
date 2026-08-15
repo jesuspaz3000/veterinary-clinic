@@ -22,6 +22,7 @@ import {
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PhotoLibraryRoundedIcon from "@mui/icons-material/PhotoLibraryRounded";
 import PetsIcon from "@mui/icons-material/Pets";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
@@ -214,6 +215,18 @@ export default function PetPhotosDialog({ open, petId, onClose, onChanged }: Pet
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>Galería de Fotos</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            color: "text.secondary",
+          }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
           {loading && (
             <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>

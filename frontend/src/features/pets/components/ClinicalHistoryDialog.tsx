@@ -14,6 +14,7 @@ import {
   Typography,
   Chip,
   Paper,
+  IconButton,
 } from "@mui/material";
 import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
@@ -22,6 +23,7 @@ import PestControlRoundedIcon from "@mui/icons-material/PestControlRounded";
 import HealingRoundedIcon from "@mui/icons-material/HealingRounded";
 import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { PetService } from "../service/pets.service";
 import { ClinicalHistoryEntry, ClinicalHistoryEntryType, PetResponse } from "../type/petsTypes";
 
@@ -77,9 +79,21 @@ export default function ClinicalHistoryDialog({ open, pet, onClose }: ClinicalHi
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1, pr: 5 }}>
         <HistoryRoundedIcon color="primary" /> Historial Clínico — {pet.name}
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 1.5, pt: 1 }}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 

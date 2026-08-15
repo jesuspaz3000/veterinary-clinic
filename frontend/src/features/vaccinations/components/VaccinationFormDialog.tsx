@@ -15,8 +15,10 @@ import {
   Autocomplete,
   Divider,
   Typography,
+  IconButton,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { PetService } from "@/features/pets/service/pets.service";
 import { PetResponse } from "@/features/pets/type/petsTypes";
 import { VeterinariansService } from "@/features/veterinarians/service/veterinarians.service";
@@ -231,6 +233,19 @@ export default function VaccinationFormDialog({
       <DialogTitle sx={{ fontWeight: 700 }}>
         {isEditing ? "Editar Vacunación" : "Nueva Vacunación"}
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}

@@ -10,7 +10,9 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { HospitalizationsService } from "../service/hospitalizations.service";
 import { HospitalizationRecordResponse } from "../type/hospitalizationsTypes";
 
@@ -49,6 +51,19 @@ export default function DeleteHospitalizationDialog({
   return (
     <Dialog open={open} onClose={deleting ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>Eliminar Hospitalización</DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={deleting}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 

@@ -12,6 +12,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   MenuItem,
   Tab,
   Tabs,
@@ -20,6 +21,7 @@ import {
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import WeeklyCalendar, { getWeekStart } from "@/shared/components/WeeklyCalendar";
 import { useAuthStore } from "@/store/auth.store";
 import { PERMISSIONS } from "@/shared/config/permissions";
@@ -270,7 +272,7 @@ export default function SchedulesManager() {
             loading={loadingProfessionals}
             disabled={loadingProfessionals}
             size="small"
-            sx={{ flex: 1, minWidth: 280, maxWidth: { xs: "100%", md: 440 } }}
+            sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: { xs: "auto", sm: 280 }, maxWidth: { xs: "100%", md: 440 } }}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -289,7 +291,7 @@ export default function SchedulesManager() {
             value={statusFilter}
             onChange={(e) => handleStatusFilterChange(e.target.value as ScheduleStatusFilter)}
             size="small"
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: "100%", sm: 200 }, flexShrink: 0 }}
           >
             {SCHEDULE_STATUS_FILTERS.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -309,7 +311,13 @@ export default function SchedulesManager() {
               setEditingSchedule(null);
               setFormOpen(true);
             }}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2.5 }}
+            sx={{
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              width: { xs: "100%", sm: "auto" },
+            }}
           >
             Agregar horario
           </Button>
@@ -453,6 +461,19 @@ export default function SchedulesManager() {
         disableRestoreFocus
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Eliminar horario</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={() => setDeletingSchedule(null)}
+          disabled={deleting}
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            color: "text.secondary",
+          }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
             {deleteError && (
@@ -499,6 +520,19 @@ export default function SchedulesManager() {
         disableRestoreFocus
       >
         <DialogTitle sx={{ fontWeight: 700 }}>Reactivar horario</DialogTitle>
+        <IconButton
+          aria-label="Cerrar"
+          onClick={() => setReactivatingSchedule(null)}
+          disabled={reactivating}
+          sx={{
+            position: "absolute",
+            right: 12,
+            top: 12,
+            color: "text.secondary",
+          }}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
         <DialogContent>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
             {reactivateError && (

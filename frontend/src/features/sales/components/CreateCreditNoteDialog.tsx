@@ -21,8 +21,10 @@ import {
   TableRow,
   FormControlLabel,
   Checkbox,
+  IconButton,
 } from "@mui/material";
 import MoneyOffRoundedIcon from "@mui/icons-material/MoneyOffRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NumberInput from "@/shared/components/NumberInput";
 import { CreditNotesService } from "../service/creditNotes.service";
 import { InvoiceResponse, CreateCreditNoteRequest, CreateCreditNoteItemRequest } from "../types/salesTypes";
@@ -112,9 +114,22 @@ export default function CreateCreditNoteDialog({ open, invoice, onClose, onSucce
 
   return (
     <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+      <DialogTitle sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1, pr: 5 }}>
         <MoneyOffRoundedIcon color="warning" /> Nota de Crédito / Anulación (Comprobante {invoice.invoiceNumber})
       </DialogTitle>
+      <IconButton
+        aria-label="Cerrar"
+        onClick={onClose}
+        disabled={saving}
+        sx={{
+          position: "absolute",
+          right: 12,
+          top: 12,
+          color: "text.secondary",
+        }}
+      >
+        <CloseRoundedIcon />
+      </IconButton>
 
       <form noValidate onSubmit={(e) => void handleSubmit(e)}>
         <DialogContent sx={{ pt: 1.5, pb: 3, display: "flex", flexDirection: "column", gap: 2.5 }}>
