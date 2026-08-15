@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { HEADER_HEIGHT } from "./constants";
-import { Drawer, Box, Tooltip, IconButton, List, ListItem, ListItemButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
+import Image from "next/image";
+import { Drawer, Box, Tooltip, IconButton, List, ListItem, ListItemButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Typography } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { SxProps, Theme } from "@mui/material";
 import { useAuthStore } from "@/store/auth.store";
 import { AuthService } from "@/features/auth/services/auth.service";
@@ -72,6 +74,50 @@ export default function Sidebar({ collapsed, onMobileClose, open, sx, variant, u
                     gap: collapsed && !onMobileClose ? 1 : 1.75,
                 }}
             >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, overflow: "hidden", minWidth: 0 }}>
+                    <Box
+                        sx={{
+                            position: "relative",
+                            width: 48,
+                            height: 48,
+                            flexShrink: 0,
+                            overflow: "hidden",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: 0,
+                                left: "-30%",
+                                width: "160%",
+                                height: "160%",
+                            }}
+                        >
+                            <Image
+                                src="/images/logo.png"
+                                alt="VetGest"
+                                fill
+                                sizes="77px"
+                                style={{ objectFit: "contain", objectPosition: "top" }}
+                            />
+                        </Box>
+                    </Box>
+                    {!collapsed && (
+                        <Typography
+                            sx={{
+                                fontWeight: 800,
+                                fontSize: "1.8rem",
+                                color: "text.primary",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}
+                        >
+                            VetGest
+                        </Typography>
+                    )}
+                </Box>
+
                 {onMobileClose && (
                     <Tooltip title="Cerrar menú" placement="left" arrow>
                         <IconButton
@@ -145,6 +191,57 @@ export default function Sidebar({ collapsed, onMobileClose, open, sx, variant, u
                         </ListItem>
                     )
                 })}
+
+                <ListItem disablePadding sx={{ mb: 0.5, display: "flex", justifyContent: "center" }}>
+                    <Tooltip title={collapsed ? "Mi Cuenta" : ""} placement="right">
+                        <ListItemButton
+                            component={Link}
+                            href="/profile"
+                            onClick={() => onMobileClose?.()}
+                            selected={pathname === "/profile" || pathname.startsWith("/profile/")}
+                            sx={{
+                                borderRadius: 2,
+                                p: 0,
+                                height: 44,
+                                width: "100%",
+                                minWidth: 44,
+                                display: "flex",
+                                justifyContent: "flex-start",
+                                overflow: "hidden",
+                                transition: "min-width 0.2s ease",
+                                "&.Mui-selected": {
+                                    bgcolor: "primary.main",
+                                    color: "primary.contrastText",
+                                    "&:hover": { bgcolor: "primary.main" },
+                                },
+                            }}
+                        >
+                            <Box sx={{
+                                width: 44,
+                                minWidth: 44,
+                                height: 44,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                pl: 0.5
+                            }}>
+                                <PersonRoundedIcon fontSize="small" />
+                            </Box>
+
+                            <Box sx={{
+                                maxWidth: collapsed ? 0 : 200,
+                                opacity: collapsed ? 0 : 1,
+                                overflow: "hidden",
+                                whiteSpace: "nowrap",
+                                transition: "max-width 0.2s ease, opacity 0.15s ease",
+                                pr: collapsed ? 0 : 1.5,
+                            }}>
+                                Mi Cuenta
+                            </Box>
+                        </ListItemButton>
+                    </Tooltip>
+                </ListItem>
             </List>
 
             <Box sx={{ px: 1, pb: 2 }}>
