@@ -6,6 +6,7 @@ import com.veterinaria.backend.sales.dto.CreateInvoiceDTO;
 import com.veterinaria.backend.sales.dto.CreateInvoicePaymentDTO;
 import com.veterinaria.backend.sales.dto.InvoiceDTO;
 import com.veterinaria.backend.sales.dto.InvoiceRequestDTO;
+import com.veterinaria.backend.sales.service.InvoicePdfService;
 import com.veterinaria.backend.sales.service.SalesService;
 import com.veterinaria.backend.user.model.User;
 import com.veterinaria.backend.user.repository.UserRepository;
@@ -15,7 +16,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -32,6 +35,7 @@ import java.util.UUID;
 public class SalesController {
 
     private final SalesService salesService;
+    private final InvoicePdfService invoicePdfService;
     private final UserRepository userRepository;
 
     @GetMapping
@@ -68,6 +72,19 @@ public class SalesController {
     @Operation(summary = "Get invoice by ID", description = "Get details of a specific invoice")
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable UUID id) {
         return ResponseEntity.ok(salesService.getInvoiceById(id));
+    }
+
+    @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAuthority('SALES_READ') or hasAuthority('PRODUCTS_READ') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Get invoice PDF", description = "Generate and download the invoice/receipt as a PDF file")
+    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable UUID id) {
+        InvoiceDTO invoice = salesService.getInvoiceById(id);
+        byte[] pdf = invoicePdfService.generatePdf(invoice);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + invoice.getInvoiceNumber() + ".pdf\"")
+                .body(pdf);
     }
 
     @PostMapping

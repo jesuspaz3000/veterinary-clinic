@@ -50,6 +50,9 @@ public class Invoice {
     @JoinColumn(name = "owner_id")
     private Owner owner;
 
+    @Column(name = "customer_name", length = 150)
+    private String customerName; // Nombre libre del cliente no registrado (solo aplica si owner es nulo)
+
     @Column(name = "appointment_id")
     private UUID appointmentId;
 

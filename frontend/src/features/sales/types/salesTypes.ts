@@ -40,6 +40,7 @@ export interface InvoiceResponse {
   ownerId: string | null;
   ownerName: string | null;
   ownerDocumentNumber: string | null;
+  customerName: string | null;
   appointmentId: string | null;
   veterinarianId: string | null;
   veterinarianName: string | null;
@@ -79,6 +80,7 @@ export interface CreateInvoiceRequest {
   series?: string;
   invoiceType?: string;
   ownerId?: string;
+  customerName?: string;
   appointmentId?: string;
   veterinarianId?: string;
   globalDiscount?: number;

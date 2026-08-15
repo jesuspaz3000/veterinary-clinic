@@ -58,6 +58,7 @@ public class InvoiceMapper {
                 .ownerId(invoice.getOwner() != null ? invoice.getOwner().getId() : null)
                 .ownerName(ownerName)
                 .ownerDocumentNumber(ownerDocNumber)
+                .customerName(invoice.getCustomerName())
                 .appointmentId(invoice.getAppointmentId())
                 .veterinarianId(invoice.getVeterinarian() != null ? invoice.getVeterinarian().getId() : null)
                 .veterinarianName(vetName)

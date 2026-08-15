@@ -21,6 +21,8 @@ public class CreateInvoiceDTO {
 
     private UUID ownerId; // Opcional (nulo si es Venta Mostrador)
 
+    private String customerName; // Opcional: nombre libre del cliente no registrado (solo si ownerId es nulo)
+
     private UUID appointmentId; // Opcional
 
     private UUID veterinarianId; // Opcional (médico referente)

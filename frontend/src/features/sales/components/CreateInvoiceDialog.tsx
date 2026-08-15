@@ -74,6 +74,7 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
   const [owners, setOwners] = useState<OwnerResponse[]>([]);
   const [selectedOwner, setSelectedOwner] = useState<OwnerResponse | null>(null);
   const [isOTC, setIsOTC] = useState(true); // Venta mostrador sin cliente
+  const [customerName, setCustomerName] = useState(""); // Nombre libre del cliente no registrado
 
   const [invoiceType, setInvoiceType] = useState("boleta");
   const [notes, setNotes] = useState("");
@@ -148,15 +149,10 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
   const handleAddVariantToCart = (opt: ProductVariantOption | null) => {
     if (!opt) return;
 
-    // Check if already in cart
-    const existingIndex = items.findIndex((i) => i.variantId === opt.variantId);
-    if (existingIndex >= 0) {
-      setItems((prev) => {
-        const copy = [...prev];
-        copy[existingIndex].quantity = (copy[existingIndex].quantity || 1) + 1;
-        return copy;
-      });
-    } else {
+    // Si ya está en el carrito, no se altera la cantidad: solo se cambia desde
+    // el input de Cantidad de la fila. Volver a elegirlo aquí no hace nada.
+    const alreadyInCart = items.some((i) => i.variantId === opt.variantId);
+    if (!alreadyInCart) {
       setItems((prev) => [
         ...prev,
         {
@@ -231,6 +227,14 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
     });
   };
 
+  // El monto de cada fila no puede hacer que la suma de pagos supere el total del
+  // comprobante: el máximo permitido es lo que falta por cobrar más lo que esa
+  // fila ya tiene puesto (para no bloquear el valor actual al calcular el tope).
+  const getMaxForPaymentRow = (index: number) => {
+    const otherPaid = payments.reduce((sum, p, i) => (i === index ? sum : sum + (p.amount || 0)), 0);
+    return Math.max(0, Math.round((totalAmount - otherPaid) * 100) / 100);
+  };
+
   const handleSetExactTotalOnFirstPayment = () => {
     setPayments((prev) => {
       const copy = [...prev];
@@ -244,6 +248,7 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
   const resetForm = () => {
     setSelectedOwner(null);
     setIsOTC(true);
+    setCustomerName("");
     setInvoiceType("boleta");
     setNotes("");
     setGlobalDiscount(0);
@@ -277,6 +282,7 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
       series: invoiceType === "factura" ? "F001" : invoiceType === "ticket" ? "T001" : "B001",
       invoiceType,
       ownerId: !isOTC && selectedOwner ? selectedOwner.id : undefined,
+      customerName: isOTC && customerName.trim() ? customerName.trim() : undefined,
       globalDiscount,
       notes: notes.trim() || undefined,
       items,
@@ -308,49 +314,70 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
           {/* Section 1: Customer & Invoice Header */}
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
-            <TextField
-              select
-              label="Tipo de Comprobante"
-              size="small"
-              value={invoiceType}
-              onChange={(e) => setInvoiceType(e.target.value)}
-              disabled={saving}
-              fullWidth
-            >
-              {INVOICE_TYPES.map((t) => (
-                <MenuItem key={t.value} value={t.value}>
-                  {t.label}
-                </MenuItem>
-              ))}
-            </TextField>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+              <TextField
+                select
+                label="Tipo de Comprobante"
+                size="small"
+                value={invoiceType}
+                onChange={(e) => setInvoiceType(e.target.value)}
+                disabled={saving}
+                fullWidth
+              >
+                {INVOICE_TYPES.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <Autocomplete
-              options={owners}
-              value={selectedOwner}
-              onChange={(_e, newValue) => {
-                setSelectedOwner(newValue);
-                setIsOTC(!newValue);
-              }}
-              getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.documentNumber || "S/D"})`}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              disabled={saving}
-              fullWidth
-              renderInput={(params) => (
-                <TextField {...params} label="Cliente / Propietario" placeholder="Buscar cliente..." size="small" />
-              )}
-            />
+              <Autocomplete
+                options={owners}
+                value={selectedOwner}
+                onChange={(_e, newValue) => {
+                  setSelectedOwner(newValue);
+                  setIsOTC(!newValue);
+                  if (newValue) setCustomerName("");
+                }}
+                getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.documentNumber || "S/D"})`}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={saving}
+                fullWidth
+                renderInput={(params) => (
+                  <TextField {...params} label="Cliente / Propietario (si está registrado)" placeholder="Buscar cliente..." size="small" />
+                )}
+              />
+            </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            {isOTC && (
+              <TextField
+                label="Nombre del cliente (opcional, si no está registrado)"
+                placeholder="Ej. Juan Pérez"
+                size="small"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                disabled={saving}
+                fullWidth
+                helperText="Déjalo vacío para una venta a 'Cliente Genérico (Mostrador)'."
+              />
+            )}
+
+            <Box>
               <Chip
-                label={isOTC ? "Cliente Genérico (Venta Mostrador)" : `Cliente: ${selectedOwner?.firstName} ${selectedOwner?.lastName}`}
-                color={isOTC ? "default" : "primary"}
+                label={
+                  !isOTC
+                    ? `Cliente: ${selectedOwner?.firstName} ${selectedOwner?.lastName}`
+                    : customerName.trim()
+                      ? `Cliente no registrado: ${customerName.trim()}`
+                      : "Cliente Genérico (Venta Mostrador)"
+                }
+                color={!isOTC ? "primary" : customerName.trim() ? "secondary" : "default"}
                 variant="filled"
+                size="small"
                 sx={{
                   borderRadius: "6px",
-                  height: "40px",
                   fontWeight: 600,
-                  fontSize: "0.85rem",
                   bgcolor: "action.selected",
                   border: "1px solid",
                   borderColor: "divider",
@@ -532,6 +559,7 @@ export default function CreateInvoiceDialog({ open, onClose, onSuccess }: Create
                     value={p.amount}
                     onChange={(val) => handlePaymentChange(index, "amount", val || 0)}
                     min={0}
+                    max={getMaxForPaymentRow(index)}
                     step={0.1}
                     disabled={saving}
                     sx={{ width: 150 }}

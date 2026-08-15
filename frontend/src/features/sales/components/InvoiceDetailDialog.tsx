@@ -21,8 +21,10 @@ import {
 } from "@mui/material";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 import { InvoiceResponse } from "../types/salesTypes";
 import RegisterPaymentDialog from "./RegisterPaymentDialog";
+import { printInvoice } from "../utils/printInvoice";
 
 interface InvoiceDetailDialogProps {
   open: boolean;
@@ -82,7 +84,11 @@ export default function InvoiceDetailDialog({ open, invoice, onClose, onChanged 
               Cliente / Propietario
             </Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {invoiceData.ownerName ? `${invoiceData.ownerName} (${invoiceData.ownerDocumentNumber || "S/D"})` : "Cliente Genérico (Venta Mostrador)"}
+              {invoiceData.ownerName
+                ? `${invoiceData.ownerName} (${invoiceData.ownerDocumentNumber || "S/D"})`
+                : invoiceData.customerName
+                  ? `${invoiceData.customerName} (no registrado)`
+                  : "Cliente Genérico (Venta Mostrador)"}
             </Typography>
           </Box>
 
@@ -229,6 +235,14 @@ export default function InvoiceDetailDialog({ open, invoice, onClose, onChanged 
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Button
+          onClick={() => void printInvoice(invoiceData.id)}
+          variant="outlined"
+          startIcon={<PrintRoundedIcon />}
+          sx={{ borderRadius: "8px", textTransform: "none", mr: "auto" }}
+        >
+          Imprimir
+        </Button>
         {canRegisterPayment && (
           <Button
             onClick={() => setRegisterPaymentOpen(true)}

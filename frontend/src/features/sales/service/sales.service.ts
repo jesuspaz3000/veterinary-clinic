@@ -29,4 +29,9 @@ export const SalesService = {
     const response = await ApiService.post<InvoiceResponse>(`/sales/${invoiceId}/payments`, request);
     return response.data;
   },
+
+  getInvoicePdf: async (invoiceId: string): Promise<Blob> => {
+    const response = await ApiService.get<Blob>(`/sales/${invoiceId}/pdf`, { responseType: "blob" });
+    return response.data;
+  },
 };

@@ -18,9 +18,11 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import MoneyOffRoundedIcon from "@mui/icons-material/MoneyOffRounded";
+import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 import CreateInvoiceDialog from "./CreateInvoiceDialog";
 import InvoiceDetailDialog from "./InvoiceDetailDialog";
 import CreateCreditNoteDialog from "./CreateCreditNoteDialog";
+import { printInvoice } from "../utils/printInvoice";
 
 const INVOICE_TYPES_FILTER = [
   { value: "all", label: "Todos los Comprobantes" },
@@ -120,7 +122,9 @@ export default function SalesTable() {
       render: (row) =>
         row.ownerName
           ? `${row.ownerName} (${row.ownerDocumentNumber || "S/D"})`
-          : "Cliente Genérico (Venta Mostrador)",
+          : row.customerName
+            ? `${row.customerName} (no registrado)`
+            : "Cliente Genérico (Venta Mostrador)",
     },
     {
       id: "userName",
@@ -180,6 +184,12 @@ export default function SalesTable() {
                 sx={{ bgcolor: "action.hover" }}
               >
                 <VisibilityRoundedIcon fontSize="small" color="primary" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Imprimir Comprobante">
+              <IconButton size="small" onClick={() => void printInvoice(row.id)} sx={{ bgcolor: "action.hover" }}>
+                <PrintRoundedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
 

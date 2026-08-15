@@ -146,6 +146,7 @@ public class SalesServiceImpl implements SalesService {
                 .invoiceNumber(invoiceNumber)
                 .invoiceType(invoiceType)
                 .owner(owner)
+                .customerName(owner == null && StringUtils.hasText(dto.getCustomerName()) ? dto.getCustomerName().trim() : null)
                 .appointmentId(dto.getAppointmentId())
                 .veterinarian(veterinarian)
                 .paymentStatus("pagado")

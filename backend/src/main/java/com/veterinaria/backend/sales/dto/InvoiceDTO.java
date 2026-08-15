@@ -20,6 +20,7 @@ public class InvoiceDTO {
     private UUID ownerId;
     private String ownerName;
     private String ownerDocumentNumber;
+    private String customerName;
     private UUID appointmentId;
     private UUID veterinarianId;
     private String veterinarianName;
