@@ -94,8 +94,13 @@ export default function NumberInput({
     const parsed = parseFloat(cleanVal);
     if (!isNaN(parsed)) {
       if (min !== undefined && parsed < min) {
+        // Si el valor clamped es igual al de la última vez (p. ej. ya estaba en el
+        // tope), el prop `value` no cambia y el efecto de sincronización de abajo
+        // no se dispara, dejando el texto sin recortar. Se fuerza aquí también.
+        setInputValue(String(min));
         onChange(min);
       } else if (max !== undefined && parsed > max) {
+        setInputValue(String(max));
         onChange(max);
       } else {
         onChange(parsed);
