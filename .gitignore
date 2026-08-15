@@ -6,3 +6,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Docker env (secretos reales para docker-compose, no subir a git)
+.env

@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
 
+const backendApiUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:8080/api";
+const backendOrigin = new URL(backendApiUrl);
+
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -10,9 +14,9 @@ const nextConfig: NextConfig = {
         hostname: "flagcdn.com",
       },
       {
-        protocol: "http",
-        hostname: "localhost",
-        port: "8080",
+        protocol: backendOrigin.protocol.replace(":", "") as "http" | "https",
+        hostname: backendOrigin.hostname,
+        port: backendOrigin.port,
       },
     ],
   },
