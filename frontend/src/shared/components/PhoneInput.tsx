@@ -353,6 +353,7 @@ export default function PhoneInput({
         <Box
           key={key}
           component="li"
+          title={option.label}
           sx={{ display: "flex", alignItems: "center", gap: 1 }}
           {...optionProps}
         >
