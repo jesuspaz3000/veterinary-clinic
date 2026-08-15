@@ -18,8 +18,8 @@ export function validateLoginForm(email: string, password: string): LoginValidat
     // Password
     if (!password) {
         errors.password = "La contraseña es requerida";
-    } else if (password.length < 8) {
-        errors.password = "Mínimo 8 caracteres";
+    } else if (password.length < 6) {
+        errors.password = "Mínimo 6 caracteres";
     }
 
     return errors;
