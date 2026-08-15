@@ -205,16 +205,8 @@ export default function SurgeriesTable() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Toolbar de filtros */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Autocomplete
             options={pets}
             value={petFilter}
@@ -226,11 +218,49 @@ export default function SurgeriesTable() {
               option.owner ? `${option.name} (${option.owner.fullName})` : option.name
             }
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            sx={{ minWidth: 260, flexGrow: 1 }}
+            size="small"
+            sx={{ flex: "1 1 auto", maxWidth: { sm: 420 } }}
             renderInput={(params) => (
-              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" size="small" />
+              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" />
             )}
           />
+          {canCreate && (
+            <>
+              <Tooltip title="Nueva Cirugía">
+                <IconButton
+                  onClick={() => setCreateOpen(true)}
+                  sx={{
+                    display: { xs: "inline-flex", sm: "none" },
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderRadius: 1,
+                    flexShrink: 0,
+                    "&:hover": { bgcolor: "primary.dark" },
+                  }}
+                >
+                  <AddRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setCreateOpen(true)}
+                sx={{
+                  display: { xs: "none", sm: "inline-flex" },
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 2.5,
+                  flexShrink: 0,
+                }}
+              >
+                Nueva Cirugía
+              </Button>
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           <TextField
             select
             label="Tipo"
@@ -240,7 +270,7 @@ export default function SurgeriesTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             <MenuItem value="">Todos</MenuItem>
             {SURGERY_TYPES.map((t) => (
@@ -258,7 +288,7 @@ export default function SurgeriesTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             <MenuItem value="">Todos</MenuItem>
             {SURGERY_STATUSES.map((s) => (
@@ -276,7 +306,7 @@ export default function SurgeriesTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 170 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             {SURGERY_ACTIVE_STATUS_FILTERS.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -285,17 +315,6 @@ export default function SurgeriesTable() {
             ))}
           </TextField>
         </Box>
-
-        {canCreate && (
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2.5 }}
-          >
-            Nueva Cirugía
-          </Button>
-        )}
       </Box>
 
       <CustomTable<SurgeryRecordResponse>

@@ -56,6 +56,12 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const DAY_LABELS_FULL = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const SLOT_HEIGHT = 56;
 const TIME_COL_WIDTH = 64;
+const TIME_COL_WIDTH_MOBILE = 44;
+// Ancho mínimo total de la grilla (columna de horas + 7 columnas de día). En
+// móvil se reduce para acortar el scroll horizontal; en tablet/escritorio se
+// mantiene lo suficientemente ancho para que cada columna sea cómoda de leer.
+const GRID_MIN_WIDTH_MOBILE = 560;
+const GRID_MIN_WIDTH_DESKTOP = 840;
 
 /** Calcula el lunes de la semana de una fecha dada */
 export function getWeekStart(date: Dayjs): Dayjs {
@@ -248,6 +254,8 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
             opacity: refreshing ? 0.5 : 1,
             transition: "opacity 0.2s ease",
             pointerEvents: refreshing ? "none" : undefined,
+            // Scroll con inercia en iOS/Safari al deslizar la semana con el dedo
+            WebkitOverflowScrolling: "touch",
             // Scrollbar fina y tematizada, coherente con los pickers de hora
             scrollbarWidth: "thin",
             scrollbarColor: "rgba(42, 191, 191, 0.45) transparent",
@@ -259,7 +267,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
             },
           }}
         >
-          <Box sx={{ minWidth: 840 }}>
+          <Box sx={{ minWidth: { xs: GRID_MIN_WIDTH_MOBILE, sm: GRID_MIN_WIDTH_DESKTOP } }}>
             {/* Encabezados de día: fijos durante el scroll vertical de la grilla */}
             <Box
               sx={{
@@ -272,7 +280,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
                 bgcolor: "background.paper",
               }}
             >
-              <Box sx={{ width: TIME_COL_WIDTH, flexShrink: 0 }} />
+              <Box sx={{ width: { xs: TIME_COL_WIDTH_MOBILE, sm: TIME_COL_WIDTH }, flexShrink: 0 }} />
               {days.map((day, i) => {
                 const isToday = !recurring && day.isSame(today, "day");
                 const isDisabledDay = !recurring && (isDayDisabled?.(day) ?? false);
@@ -329,7 +337,7 @@ export default function WeeklyCalendar<T extends CalendarEvent>({
             {/* Grilla horaria */}
             <Box sx={{ display: "flex" }}>
               {/* Columna de horas */}
-              <Box sx={{ width: TIME_COL_WIDTH, flexShrink: 0, height: gridHeight }}>
+              <Box sx={{ width: { xs: TIME_COL_WIDTH_MOBILE, sm: TIME_COL_WIDTH }, flexShrink: 0, height: gridHeight }}>
                 {hours.map((hour) => (
                   <Box
                     key={hour}

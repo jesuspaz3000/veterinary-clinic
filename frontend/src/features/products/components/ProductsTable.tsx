@@ -295,18 +295,10 @@ export default function ProductsTable() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Table Toolbar */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", flex: 1 }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <TextField
-            placeholder="Buscar por producto, principio activo, SKU..."
+            placeholder="Buscar producto..."
             value={search}
             onChange={handleSearchChange}
             size="small"
@@ -320,15 +312,44 @@ export default function ProductsTable() {
               },
             }}
             sx={{
-              width: { xs: "100%", md: "40%" },
-              maxWidth: 450,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
-                bgcolor: "background.paper",
-              },
+              flex: "1 1 auto",
+              maxWidth: { sm: 600 },
+              "& .MuiOutlinedInput-root": { bgcolor: "background.paper" },
             }}
           />
+          <Tooltip title="Nuevo Producto">
+            <IconButton
+              onClick={() => setCreateOpen(true)}
+              sx={{
+                display: { xs: "inline-flex", sm: "none" },
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                borderRadius: 1,
+                flexShrink: 0,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <AddRoundedIcon />
+            </IconButton>
+          </Tooltip>
+          <Button
+            variant="contained"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => setCreateOpen(true)}
+            sx={{
+              display: { xs: "none", sm: "inline-flex" },
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              flexShrink: 0,
+            }}
+          >
+            Nuevo Producto
+          </Button>
+        </Box>
 
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
           <TextField
             select
             size="small"
@@ -337,13 +358,7 @@ export default function ProductsTable() {
               setSelectedCategory(e.target.value);
               setPage(0);
             }}
-            sx={{
-              minWidth: 180,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
-                bgcolor: "background.paper",
-              },
-            }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
             label="Categoría"
           >
             <MenuItem value="all">Todas las categorías</MenuItem>
@@ -371,35 +386,16 @@ export default function ProductsTable() {
                 Solo Stock Bajo
               </Typography>
             }
+            sx={{ ml: 0, mr: 0 }}
           />
-        </Box>
 
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
             variant="outlined"
             startIcon={<CategoryRoundedIcon />}
             onClick={() => setManageCategoriesOpen(true)}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 600,
-            }}
+            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600 }}
           >
             Categorías
-          </Button>
-
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2.5,
-            }}
-          >
-            Nuevo Producto
           </Button>
         </Box>
       </Box>

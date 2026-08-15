@@ -139,7 +139,7 @@ export default function AppointmentsAgenda() {
             getOptionLabel={(option) => getUserDisplayName(option.user, "Veterinario")}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             size="small"
-            sx={{ flex: 1, minWidth: 220 }}
+            sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: { xs: "auto", sm: 220 } }}
             renderInput={(params) => (
               <TextField {...params} label="Filtrar por veterinario" placeholder="Todos" />
             )}
@@ -154,7 +154,7 @@ export default function AppointmentsAgenda() {
             getOptionLabel={(option) => getUserDisplayName(option.user, "Grooming")}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             size="small"
-            sx={{ flex: 1, minWidth: 220 }}
+            sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: { xs: "auto", sm: 220 } }}
             renderInput={(params) => (
               <TextField {...params} label="Filtrar por grooming" placeholder="Todos" />
             )}
@@ -169,7 +169,13 @@ export default function AppointmentsAgenda() {
               setSlotPrefill(null);
               setCreateOpen(true);
             }}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2.5 }}
+            sx={{
+              borderRadius: "10px",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              width: { xs: "100%", sm: "auto" },
+            }}
           >
             Nueva Cita
           </Button>

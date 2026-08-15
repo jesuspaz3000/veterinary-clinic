@@ -214,7 +214,17 @@ export default function AppointmentsTable() {
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(auto-fit, minmax(190px, 1fr))" },
+            gap: 2,
+            alignItems: "center",
+            width: { xs: "100%", md: "auto" },
+            flexGrow: 1,
+            maxWidth: { md: "70%" },
+          }}
+        >
           <TextField
             select
             label="Filtrar por estado"
@@ -224,7 +234,7 @@ export default function AppointmentsTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ width: { xs: "100%", md: 240 } }}
+            sx={{ width: "100%" }}
           >
             <MenuItem value="">Todos los estados</MenuItem>
             {APPOINTMENT_STATUSES.map((s: AppointmentStatus) => (
@@ -243,7 +253,7 @@ export default function AppointmentsTable() {
             }}
             maxDate={toDate ?? undefined}
             format="DD/MM/YYYY"
-            slotProps={{ field: { clearable: true }, textField: { size: "small", sx: { width: { xs: "100%", md: 210 } } } }}
+            slotProps={{ field: { clearable: true }, textField: { size: "small", sx: { width: "100%" } } }}
           />
           <DatePicker
             label="Hasta"
@@ -254,7 +264,7 @@ export default function AppointmentsTable() {
             }}
             minDate={fromDate ?? undefined}
             format="DD/MM/YYYY"
-            slotProps={{ field: { clearable: true }, textField: { size: "small", sx: { width: { xs: "100%", md: 210 } } } }}
+            slotProps={{ field: { clearable: true }, textField: { size: "small", sx: { width: "100%" } } }}
           />
         </Box>
 

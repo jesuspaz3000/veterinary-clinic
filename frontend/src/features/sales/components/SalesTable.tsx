@@ -217,18 +217,10 @@ export default function SalesTable() {
     <>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
         {/* Table Actions Toolbar */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
             <TextField
-              placeholder="Buscar por N° comprobante o notas..."
+              placeholder="Buscar comprobante..."
               variant="outlined"
               size="small"
               value={search}
@@ -243,15 +235,45 @@ export default function SalesTable() {
                 },
               }}
               sx={{
-                width: { xs: "100%", sm: "340px", md: "400px" },
-                minWidth: 320,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "10px",
-                  bgcolor: "background.paper",
-                },
+                flex: "1 1 auto",
+                maxWidth: { sm: 600 },
+                "& .MuiOutlinedInput-root": { bgcolor: "background.paper" },
               }}
             />
+            <Tooltip title="Nueva Venta (POS)">
+              <IconButton
+                onClick={() => setCreateOpen(true)}
+                sx={{
+                  display: { xs: "inline-flex", sm: "none" },
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  borderRadius: 1,
+                  flexShrink: 0,
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
+              >
+                <AddRoundedIcon />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddRoundedIcon />}
+              onClick={() => setCreateOpen(true)}
+              sx={{
+                display: { xs: "none", sm: "inline-flex" },
+                borderRadius: "8px",
+                textTransform: "none",
+                fontWeight: 600,
+                px: 2.5,
+                flexShrink: 0,
+              }}
+            >
+              Nueva Venta (POS)
+            </Button>
+          </Box>
 
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
             <TextField
               select
               size="small"
@@ -260,13 +282,7 @@ export default function SalesTable() {
                 setInvoiceType(e.target.value);
                 setPage(0);
               }}
-              sx={{
-                minWidth: 200,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "10px",
-                  bgcolor: "background.paper",
-                },
-              }}
+              sx={{ width: { xs: "100%", sm: 190 } }}
             >
               {INVOICE_TYPES_FILTER.map((t) => (
                 <MenuItem key={t.value} value={t.value}>
@@ -283,13 +299,7 @@ export default function SalesTable() {
                 setPaymentStatus(e.target.value);
                 setPage(0);
               }}
-              sx={{
-                minWidth: 180,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "10px",
-                  bgcolor: "background.paper",
-                },
-              }}
+              sx={{ width: { xs: "100%", sm: 190 } }}
             >
               {PAYMENT_STATUS_FILTER.map((s) => (
                 <MenuItem key={s.value} value={s.value}>
@@ -298,21 +308,6 @@ export default function SalesTable() {
               ))}
             </TextField>
           </Box>
-
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2.5,
-            }}
-          >
-            Nueva Venta (POS)
-          </Button>
         </Box>
 
         {/* Custom Table */}

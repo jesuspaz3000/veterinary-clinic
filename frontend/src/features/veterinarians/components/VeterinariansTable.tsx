@@ -260,18 +260,10 @@ export default function VeterinariansTable() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Table Toolbar */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <TextField
-            placeholder="Buscar por nombre, usuario, correo o licencia..."
+            placeholder="Buscar veterinario..."
             value={search}
             onChange={handleSearchChange}
             size="small"
@@ -285,15 +277,44 @@ export default function VeterinariansTable() {
               },
             }}
             sx={{
-              width: { xs: "100%", md: "40%" },
-              maxWidth: 450,
-              flexGrow: 1,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "10px",
-                bgcolor: "background.paper",
-              },
+              flex: "1 1 auto",
+              maxWidth: { sm: 600 },
+              "& .MuiOutlinedInput-root": { bgcolor: "background.paper" },
             }}
           />
+          <Tooltip title="Nuevo Veterinario">
+            <IconButton
+              onClick={() => setCreateOpen(true)}
+              sx={{
+                display: { xs: "inline-flex", sm: "none" },
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                borderRadius: 1,
+                flexShrink: 0,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <AddRoundedIcon />
+            </IconButton>
+          </Tooltip>
+          <Button
+            variant="contained"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => setCreateOpen(true)}
+            sx={{
+              display: { xs: "none", sm: "inline-flex" },
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              flexShrink: 0,
+            }}
+          >
+            Nuevo Veterinario
+          </Button>
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
           <TextField
             select
             label="Estado"
@@ -303,7 +324,7 @@ export default function VeterinariansTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             {VETERINARIAN_STATUS_FILTERS.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -311,35 +332,13 @@ export default function VeterinariansTable() {
               </MenuItem>
             ))}
           </TextField>
-        </Box>
-
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
           <Button
             variant="outlined"
             startIcon={<SettingsRoundedIcon />}
             onClick={() => setManageSpecialtiesOpen(true)}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2,
-            }}
+            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2 }}
           >
             Gestionar Especialidades
-          </Button>
-
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{
-              borderRadius: "10px",
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2.5,
-            }}
-          >
-            Nuevo Veterinario
           </Button>
         </Box>
       </Box>

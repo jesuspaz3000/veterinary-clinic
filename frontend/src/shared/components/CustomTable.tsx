@@ -132,10 +132,156 @@ export default function CustomTable<T>({
     const allSelected = data.length > 0 && selected.length === data.length;
     const someSelected = selected.length > 0 && selected.length < data.length;
 
-    return (
+    const getCellValue = (row: T, index: number, column: Column<T>): React.ReactNode => {
+        const record = row as Record<string, React.ReactNode>;
+        return column.render ? column.render(row, index) : record[column.id];
+    };
+
+    // Se renderizan ambas variantes (tarjetas y tabla) siempre, y CSS puro (media query
+    // vía sx) decide cuál se ve según el ancho de pantalla. Decidir esto con JS
+    // (useMediaQuery) requiere saber el viewport del cliente, algo que el servidor no
+    // puede conocer al renderizar: eso causaba un frame con la variante equivocada y,
+    // peor, un error de hidratación cuando el cliente calculaba un valor distinto al
+    // que ya había renderizado el servidor. Con CSS, el navegador aplica el layout
+    // correcto desde el primer pintado, sin JS de por medio.
+
+    const renderMobileCards = () => {
+        const actionsColumn = columns.find((c) => c.id === "actions");
+        const [headerColumn, ...restColumns] = columns.filter((c) => c.id !== "index" && c.id !== "actions");
+
+        return (
+            <Box sx={{ display: { xs: "flex", sm: "none" }, flexDirection: "column", gap: 1.5, position: "relative" }}>
+                {loading && (
+                    <LinearProgress sx={{ position: "absolute", top: -8, left: 0, right: 0, height: "3px", borderRadius: "2px" }} />
+                )}
+
+                {error ? (
+                    <Alert severity="error" sx={{ borderRadius: "10px" }}>
+                        <AlertTitle sx={{ fontWeight: 700 }}>Error al cargar datos</AlertTitle>
+                        {typeof error === "string" ? error : error?.message || "No se pudieron obtener los registros desde el servidor."}
+                    </Alert>
+                ) : loading && data.length === 0 ? (
+                    Array.from(new Array(4)).map((_, i) => (
+                        <Skeleton key={`skeleton-card-${i}`} variant="rounded" height={110} sx={{ borderRadius: "10px" }} />
+                    ))
+                ) : data.length > 0 ? (
+                    data.map((row, index) => {
+                        const isItemSelected = isSelected(row, index);
+                        const rowId = getId(row, index);
+
+                        return (
+                            <Paper
+                                key={rowId}
+                                variant="outlined"
+                                onClick={(event) => handleRowClick(row, index, event)}
+                                sx={{
+                                    p: 2,
+                                    borderRadius: "10px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 1,
+                                    cursor: selectable ? "pointer" : "default",
+                                    bgcolor: isItemSelected ? "action.selected" : "background.paper",
+                                    borderColor: isItemSelected ? "primary.main" : "divider",
+                                }}
+                            >
+                                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+                                    {selectable && (
+                                        <Checkbox
+                                            color="primary"
+                                            checked={isItemSelected}
+                                            size="small"
+                                            sx={{ p: 0, mt: 0.25 }}
+                                        />
+                                    )}
+                                    {headerColumn && (
+                                        <Box sx={{ minWidth: 0, flex: 1 }}>{getCellValue(row, index, headerColumn)}</Box>
+                                    )}
+                                </Box>
+
+                                {restColumns.map((column) => (
+                                    <Box
+                                        key={column.id}
+                                        sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ fontWeight: 700, textTransform: "uppercase", fontSize: "0.68rem", pt: 0.4, flexShrink: 0 }}
+                                        >
+                                            {column.label}
+                                        </Typography>
+                                        <Box sx={{ minWidth: 0, textAlign: "right" }}>{getCellValue(row, index, column)}</Box>
+                                    </Box>
+                                ))}
+
+                                {actionsColumn && (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "flex-end",
+                                            pt: 1,
+                                            mt: 0.5,
+                                            borderTop: "1px solid",
+                                            borderColor: "divider",
+                                        }}
+                                    >
+                                        {getCellValue(row, index, actionsColumn)}
+                                    </Box>
+                                )}
+                            </Paper>
+                        );
+                    })
+                ) : (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            py: 6,
+                            gap: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                            borderRadius: "10px",
+                        }}
+                    >
+                        <InboxOutlinedIcon sx={{ fontSize: 60, color: "text.secondary", opacity: 0.5 }} />
+                        <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            {emptyMessage}
+                        </Typography>
+                    </Box>
+                )}
+
+                <Paper variant="outlined" sx={{ borderRadius: "8px" }}>
+                    <TablePagination
+                        rowsPerPageOptions={rowsPerPageOptions}
+                        component="div"
+                        count={totalElements ?? count ?? 0}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={onPageChange}
+                        onRowsPerPageChange={onRowsPerPageChange}
+                        labelRowsPerPage="Filas:"
+                        labelDisplayedRows={({ from, to, count }) =>
+                            `${from}–${to} de ${count !== -1 ? count : `más de ${to}`}`
+                        }
+                        sx={{
+                            bgcolor: "background.paper",
+                            ".MuiTablePagination-toolbar": { flexWrap: "wrap", justifyContent: "center", rowGap: 0.5, px: 1 },
+                            ".MuiTablePagination-spacer": { display: "none" },
+                        }}
+                    />
+                </Paper>
+            </Box>
+        );
+    };
+
+    const renderDesktopTable = () => (
         <Paper
             elevation={0}
             sx={{
+                display: { xs: "none", sm: "block" },
                 width: "100%",
                 overflow: "hidden",
                 position: "relative",
@@ -376,5 +522,12 @@ export default function CustomTable<T>({
                 }}
             />
         </Paper>
+    );
+
+    return (
+        <>
+            {renderMobileCards()}
+            {renderDesktopTable()}
+        </>
     );
 }

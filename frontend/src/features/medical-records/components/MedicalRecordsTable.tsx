@@ -202,16 +202,8 @@ export default function MedicalRecordsTable() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Toolbar de filtros */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Autocomplete
             options={pets}
             value={petFilter}
@@ -223,11 +215,49 @@ export default function MedicalRecordsTable() {
               option.owner ? `${option.name} (${option.owner.fullName})` : option.name
             }
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            sx={{ minWidth: 260, flexGrow: 1 }}
+            size="small"
+            sx={{ flex: "1 1 auto", maxWidth: { sm: 420 } }}
             renderInput={(params) => (
-              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" size="small" />
+              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" />
             )}
           />
+          {canCreate && (
+            <>
+              <Tooltip title="Nuevo Registro">
+                <IconButton
+                  onClick={() => setCreateOpen(true)}
+                  sx={{
+                    display: { xs: "inline-flex", sm: "none" },
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderRadius: 1,
+                    flexShrink: 0,
+                    "&:hover": { bgcolor: "primary.dark" },
+                  }}
+                >
+                  <AddRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setCreateOpen(true)}
+                sx={{
+                  display: { xs: "none", sm: "inline-flex" },
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 2.5,
+                  flexShrink: 0,
+                }}
+              >
+                Nuevo Registro
+              </Button>
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           <TextField
             select
             label="Tipo de registro"
@@ -237,7 +267,7 @@ export default function MedicalRecordsTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 180 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             <MenuItem value="">Todos</MenuItem>
             {RECORD_TYPES.map((t) => (
@@ -247,17 +277,6 @@ export default function MedicalRecordsTable() {
             ))}
           </TextField>
         </Box>
-
-        {canCreate && (
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2.5 }}
-          >
-            Nuevo Registro
-          </Button>
-        )}
       </Box>
 
       <CustomTable<MedicalRecordResponse>

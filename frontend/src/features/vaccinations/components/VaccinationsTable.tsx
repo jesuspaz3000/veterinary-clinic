@@ -226,16 +226,8 @@ export default function VaccinationsTable() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {/* Toolbar de filtros */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", flexGrow: 1, maxWidth: { md: "70%" } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Autocomplete
             options={pets}
             value={petFilter}
@@ -247,11 +239,49 @@ export default function VaccinationsTable() {
               option.owner ? `${option.name} (${option.owner.fullName})` : option.name
             }
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            sx={{ minWidth: 260, flexGrow: 1 }}
+            size="small"
+            sx={{ flex: "1 1 auto", maxWidth: { sm: 420 } }}
             renderInput={(params) => (
-              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" size="small" />
+              <TextField {...params} label="Filtrar por mascota" placeholder="Todas las mascotas" />
             )}
           />
+          {canCreate && (
+            <>
+              <Tooltip title="Nueva Vacunación">
+                <IconButton
+                  onClick={() => setCreateOpen(true)}
+                  sx={{
+                    display: { xs: "inline-flex", sm: "none" },
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderRadius: 1,
+                    flexShrink: 0,
+                    "&:hover": { bgcolor: "primary.dark" },
+                  }}
+                >
+                  <AddRoundedIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setCreateOpen(true)}
+                sx={{
+                  display: { xs: "none", sm: "inline-flex" },
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 2.5,
+                  flexShrink: 0,
+                }}
+              >
+                Nueva Vacunación
+              </Button>
+            </>
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           <TextField
             select
             label="Estado de dosis"
@@ -261,7 +291,7 @@ export default function VaccinationsTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 200 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             {DOSE_FILTERS.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -278,7 +308,7 @@ export default function VaccinationsTable() {
               setPage(0);
             }}
             size="small"
-            sx={{ minWidth: 160 }}
+            sx={{ width: { xs: "100%", sm: 200 } }}
           >
             {VACCINATION_STATUS_FILTERS.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -287,17 +317,6 @@ export default function VaccinationsTable() {
             ))}
           </TextField>
         </Box>
-
-        {canCreate && (
-          <Button
-            variant="contained"
-            startIcon={<AddRoundedIcon />}
-            onClick={() => setCreateOpen(true)}
-            sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 600, px: 2.5 }}
-          >
-            Nueva Vacunación
-          </Button>
-        )}
       </Box>
 
       <CustomTable<VaccinationRecordResponse>
