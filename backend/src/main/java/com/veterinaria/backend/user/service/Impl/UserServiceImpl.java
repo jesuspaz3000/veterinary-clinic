@@ -1,13 +1,16 @@
 package com.veterinaria.backend.user.service.Impl;
 
+import com.veterinaria.backend.common.exception.BusinessException;
 import com.veterinaria.backend.common.exception.ConflictException;
 import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.common.storage.StorageFolder;
 import com.veterinaria.backend.common.storage.StorageService;
 import com.veterinaria.backend.role.model.Role;
 import com.veterinaria.backend.role.repository.RoleRepository;
+import com.veterinaria.backend.user.dto.ChangePasswordDTO;
 import com.veterinaria.backend.user.dto.CreateUserDTO;
 import com.veterinaria.backend.user.dto.ResetPasswordDTO;
+import com.veterinaria.backend.user.dto.UpdateMyProfileDTO;
 import com.veterinaria.backend.user.dto.UpdateUserDTO;
 import com.veterinaria.backend.user.dto.UserDTO;
 import com.veterinaria.backend.user.event.UserDeactivatedEvent;
@@ -178,6 +181,49 @@ public class UserServiceImpl implements UserService {
 
         userRepository.saveAndFlush(user);
         log.info("Password reset for user: {}", user.getEmail());
+    }
+
+    @Override
+    @Transactional
+    public UserDTO updateMyProfile(UUID id, UpdateMyProfileDTO dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (!user.getEmail().equals(dto.getEmail())) {
+            if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+                throw new ConflictException("Email already exists");
+            }
+        }
+
+        String avatarUrl = storageService.updateFile(dto.getAvatar(), user.getAvatarUrl(), dto.getRemoveAvatar(), StorageFolder.USERS);
+
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setPhone(dto.getPhone());
+        user.setAvatarUrl(avatarUrl);
+        user = userRepository.saveAndFlush(user);
+
+        log.info("Profile updated by user: {}", user.getEmail());
+        return userMapper.toDTO(user);
+    }
+
+    @Override
+    @Transactional
+    public void changeMyPassword(UUID id, ChangePasswordDTO dto) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            throw new BusinessException("La contraseña actual no es correcta");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.saveAndFlush(user);
+
+        log.info("Password changed by user: {}", user.getEmail());
     }
 
     ////////////////////////////////////////////////////////////////

@@ -3,11 +3,16 @@ package com.veterinaria.backend.user.controller;
 import com.veterinaria.backend.common.dto.MessageResponse;
 import com.veterinaria.backend.common.dto.PaginatedResponse;
 import com.veterinaria.backend.common.exception.BusinessException;
+import com.veterinaria.backend.common.exception.NotFoundException;
 import com.veterinaria.backend.common.util.PaginationValidator;
+import com.veterinaria.backend.user.dto.ChangePasswordDTO;
 import com.veterinaria.backend.user.dto.CreateUserDTO;
 import com.veterinaria.backend.user.dto.ResetPasswordDTO;
+import com.veterinaria.backend.user.dto.UpdateMyProfileDTO;
 import com.veterinaria.backend.user.dto.UpdateUserDTO;
 import com.veterinaria.backend.user.dto.UserDTO;
+import com.veterinaria.backend.user.model.User;
+import com.veterinaria.backend.user.repository.UserRepository;
 import com.veterinaria.backend.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -22,6 +27,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -35,6 +41,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "Bearer Authentication")
 public class UserController {
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @GetMapping
     @PreAuthorize("hasAuthority('USERS_READ')")
@@ -116,5 +123,40 @@ public class UserController {
     ) {
         userService.resetPassword(id, dto);
         return ResponseEntity.ok(new MessageResponse("Password reset successfully"));
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get my profile", description = "Get the currently authenticated user's own profile")
+    public ResponseEntity<UserDTO> getMyProfile(Authentication authentication) {
+        User currentUser = getAuthenticatedUser(authentication);
+        return ResponseEntity.ok(userService.getUserById(currentUser.getId()));
+    }
+
+    @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Update my profile", description = "Update the currently authenticated user's own personal data and avatar")
+    public ResponseEntity<UserDTO> updateMyProfile(
+            @Valid @ModelAttribute UpdateMyProfileDTO dto,
+            Authentication authentication
+    ) {
+        User currentUser = getAuthenticatedUser(authentication);
+        return ResponseEntity.ok(userService.updateMyProfile(currentUser.getId(), dto));
+    }
+
+    @PutMapping("/me/password")
+    @Operation(summary = "Change my password", description = "Change the currently authenticated user's own password")
+    public ResponseEntity<MessageResponse> changeMyPassword(
+            @Valid @RequestBody ChangePasswordDTO dto,
+            Authentication authentication
+    ) {
+        User currentUser = getAuthenticatedUser(authentication);
+        userService.changeMyPassword(currentUser.getId(), dto);
+        return ResponseEntity.ok(new MessageResponse("Password changed successfully"));
+    }
+
+    private User getAuthenticatedUser(Authentication authentication) {
+        String principal = authentication.getName();
+        return userRepository.findByEmail(principal)
+                .or(() -> userRepository.findByUsername(principal))
+                .orElseThrow(() -> new NotFoundException("Usuario autenticado no encontrado."));
     }
 }
