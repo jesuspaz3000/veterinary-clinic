@@ -2,7 +2,7 @@
 // VetGest - Esquema de Base de Datos
 // - Secciones sin marcar: implementadas en el backend
 // - Secciones marcadas con [PLANEADO]: diseñadas, pendientes de implementar
-// Última verificación contra backend: 2026-08-13
+// Última verificación contra backend: 2026-08-15
 ////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////
@@ -184,7 +184,7 @@ Table veterinarian_schedule {
   start_time time [not null]
   end_time time [not null]
   is_available boolean [default: true]
-  is_active boolean [default: true] // eliminación lógica del registro de horario
+  is_active boolean [not null, default: true] // eliminación lógica del registro de horario
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -202,7 +202,7 @@ Table grooming_schedule {
   start_time time [not null]
   end_time time [not null]
   is_available boolean [default: true]
-  is_active boolean [default: true] // eliminación lógica del registro de horario
+  is_active boolean [not null, default: true] // eliminación lógica del registro de horario
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -445,7 +445,7 @@ Table medical_record {
   heart_rate integer
   respiratory_rate integer
   follow_up_date date
-  status string [default: 'completado'] // completado, pendiente_seguimiento
+  status string [not null, default: 'completado'] // completado, pendiente_seguimiento
   created_at timestamp [not null]
   updated_at timestamp
 
@@ -577,7 +577,7 @@ Table surgery_record {
   surgery_notes text
   post_surgery_notes text
   complications text
-  status string [default: 'programada'] // programada, en_proceso, completada, cancelada
+  status string [not null, default: 'programada'] // programada, en_proceso, completada, cancelada
   is_active boolean [not null, default: true] // eliminación lógica
   created_at timestamp [not null]
   updated_at timestamp
@@ -607,7 +607,7 @@ Table hospitalization_record {
   reason text [not null]
   cage_number string
   veterinarian_id UUID [not null]
-  status string [default: 'activo'] // activo, alta, transferido
+  status string [not null, default: 'activo'] // activo, alta, transferido
   final_diagnosis text
   discharge_notes text
   is_active boolean [not null, default: true] // eliminación lógica
@@ -664,9 +664,10 @@ Table invoices {
   invoice_number string [not null, unique] // Ej. B001-00000123, F001-00000045, T001-00000890
   invoice_type string [not null, default: 'boleta'] // boleta, factura, ticket
   owner_id UUID // Nulo para venta mostrador / cliente genérico
+  customer_name string // Nombre libre del cliente no registrado (solo aplica si owner_id es nulo)
   appointment_id UUID // Columna simple (sin FK en la entidad): referencia lógica a appointments
   veterinarian_id UUID // Médico referente (opcional)
-  payment_status string [not null, default: 'pagado'] // pendiente, pagado, anulado
+  payment_status string [not null, default: 'pagado'] // pendiente, parcial, pagado, anulado
   subtotal decimal(10,2) [not null]
   discount decimal(10,2) [not null, default: 0]
   tax decimal(10,2) [not null, default: 0]
@@ -761,5 +762,3 @@ Table credit_note_items {
 
 Ref: credit_notes.id < credit_note_items.credit_note_id [delete: cascade]
 Ref: invoice_items.id < credit_note_items.invoice_item_id [delete: restrict]
-
-Ref: pets.id < pet_photo.pet_id [delete: cascade]
