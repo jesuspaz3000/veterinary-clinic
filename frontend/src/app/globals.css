@@ -1,6 +1,37 @@
 @layer theme, base, mui, components, utilities;
 @import "tailwindcss";
 
+/* Scrollbar fina y tematizada para el scroll de la página (html/body), que
+   de lo contrario muestra la scrollbar nativa del navegador/SO (gruesa,
+   gris) y choca con el tema oscuro. */
+html,
+body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 191, 191, 0.45) transparent;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: rgba(42, 191, 191, 0.45);
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: rgba(42, 191, 191, 0.65);
+}
+
 /* Scrollbar fina y tematizada para los selectores de hora de MUI X
    (DigitalClock / MultiSectionDigitalClock), que por defecto muestran
    la scrollbar nativa del navegador y chocan con el tema oscuro. */
@@ -47,6 +78,28 @@
 
 .MuiDialog-paper::-webkit-scrollbar-thumb,
 .MuiDialogContent-root::-webkit-scrollbar-thumb {
+  background: rgba(42, 191, 191, 0.45);
+  border-radius: 3px;
+}
+
+/* Scrollbar fina y tematizada para el contenedor con scroll de las tablas
+   (MuiTableContainer-root, usado por CustomTable y por el Kardex), que de
+   lo contrario muestra la scrollbar nativa del navegador y choca con el tema. */
+.MuiTableContainer-root {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 191, 191, 0.45) transparent;
+}
+
+.MuiTableContainer-root::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.MuiTableContainer-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MuiTableContainer-root::-webkit-scrollbar-thumb {
   background: rgba(42, 191, 191, 0.45);
   border-radius: 3px;
 }
