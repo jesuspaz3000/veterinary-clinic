@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInventoryMovements } from "../hooks/useInventoryMovements";
 import { ProductsService } from "@/features/products/service/products.service";
 import { InventoryMovementResponse } from "../types/salesTypes";
@@ -86,6 +86,25 @@ export default function KardexTable() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedVariant, setSelectedVariant] = useState("all");
   const [variantOptions, setVariantOptions] = useState<VariantOption[]>([]);
+
+  // La cabecera tiene 2 filas (grupos + sub-columnas). `stickyHeader` de MUI
+  // fija TODAS las celdas del thead en `top: 0`, así que la 2da fila necesita
+  // su propio offset (= alto real de la 1ra fila) para quedar pegada justo
+  // debajo en vez de competir por el mismo `top: 0` que la 1ra.
+  const headerRow1Ref = useRef<HTMLTableRowElement>(null);
+  const [headerRow1Height, setHeaderRow1Height] = useState(0);
+
+  useEffect(() => {
+    const el = headerRow1Ref.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const height = entries[0]?.contentRect.height;
+      if (height) setHeaderRow1Height(height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     ProductsService.getAllProducts()
@@ -191,7 +210,7 @@ export default function KardexTable() {
           <Table stickyHeader aria-label="tabla kardex inventario">
             <TableHead>
               {/* Header Row 1: Groups */}
-              <TableRow>
+              <TableRow ref={headerRow1Ref}>
                 <TableCell
                   rowSpan={2}
                   sx={{
@@ -256,7 +275,8 @@ export default function KardexTable() {
                     fontSize: "0.78rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(46, 125, 50, 0.18)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(46, 125, 50, 0.18), rgba(46, 125, 50, 0.18)), ${theme.palette.background.tableHeader}`,
                     color: "success.main",
                     borderBottom: "1px solid",
                     borderColor: "divider",
@@ -276,7 +296,8 @@ export default function KardexTable() {
                     fontSize: "0.78rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(211, 47, 47, 0.18)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(211, 47, 47, 0.18), rgba(211, 47, 47, 0.18)), ${theme.palette.background.tableHeader}`,
                     color: "error.main",
                     borderBottom: "1px solid",
                     borderColor: "divider",
@@ -296,7 +317,8 @@ export default function KardexTable() {
                     fontSize: "0.78rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(25, 118, 210, 0.18)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(25, 118, 210, 0.18), rgba(25, 118, 210, 0.18)), ${theme.palette.background.tableHeader}`,
                     color: "info.main",
                     borderBottom: "1px solid",
                     borderColor: "divider",
@@ -328,7 +350,7 @@ export default function KardexTable() {
               </TableRow>
 
               {/* Header Row 2: Sub-columns */}
-              <TableRow>
+              <TableRow sx={{ "& > .MuiTableCell-root": { top: headerRow1Height } }}>
                 {/* Entradas sub-headers */}
                 <TableCell
                   align="right"
@@ -337,7 +359,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(46, 125, 50, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(46, 125, 50, 0.12), rgba(46, 125, 50, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "success.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -355,7 +378,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(46, 125, 50, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(46, 125, 50, 0.12), rgba(46, 125, 50, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "success.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -373,7 +397,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(46, 125, 50, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(46, 125, 50, 0.12), rgba(46, 125, 50, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "success.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -393,7 +418,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(211, 47, 47, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(211, 47, 47, 0.12), rgba(211, 47, 47, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "error.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -411,7 +437,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(211, 47, 47, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(211, 47, 47, 0.12), rgba(211, 47, 47, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "error.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -429,7 +456,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(211, 47, 47, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(211, 47, 47, 0.12), rgba(211, 47, 47, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "error.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -449,7 +477,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(25, 118, 210, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(25, 118, 210, 0.12), rgba(25, 118, 210, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "info.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
@@ -467,7 +496,8 @@ export default function KardexTable() {
                     fontSize: "0.75rem",
                     letterSpacing: "0.05em",
                     textTransform: "uppercase",
-                    bgcolor: "rgba(25, 118, 210, 0.12)",
+                    background: (theme) =>
+                      `linear-gradient(rgba(25, 118, 210, 0.12), rgba(25, 118, 210, 0.12)), ${theme.palette.background.tableHeader}`,
                     color: "info.main",
                     borderBottom: "2px solid",
                     borderColor: "divider",
