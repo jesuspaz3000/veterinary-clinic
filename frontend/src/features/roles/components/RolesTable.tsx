@@ -141,32 +141,36 @@ export default function RolesTable() {
         row.isActive ? (
           <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
             <Tooltip title="Editar Rol">
-              <IconButton
-                size="small"
-                color="primary"
-                disabled={row.name === "SUPERADMIN"}
-                onClick={() => {
-                  setSelectedRole(row);
-                  setEditOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <EditRoundedIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  disabled={row.name === "SUPERADMIN"}
+                  onClick={() => {
+                    setSelectedRole(row);
+                    setEditOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Eliminar Rol">
-              <IconButton
-                size="small"
-                color="error"
-                disabled={["SUPERADMIN", "VETERINARIAN", "ADMIN", "GROOMING"].includes(row.name)}
-                onClick={() => {
-                  setSelectedRole(row);
-                  setDeleteOpen(true);
-                }}
-                sx={{ bgcolor: "action.hover" }}
-              >
-                <DeleteRoundedIcon fontSize="small" />
-              </IconButton>
+              <span>
+                <IconButton
+                  size="small"
+                  color="error"
+                  disabled={["SUPERADMIN", "VETERINARIAN", "ADMIN", "GROOMING"].includes(row.name)}
+                  onClick={() => {
+                    setSelectedRole(row);
+                    setDeleteOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <DeleteRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
         ) : (
