@@ -17,5 +17,5 @@ export interface DashboardStats {
     revenueThisMonth: number;
     appointmentsLast7Days: DashboardChartPoint[];
     revenueLast7Days: DashboardChartPoint[];
-    appointmentsByStatusToday: Record<string, number>;
+    appointmentsByStatusLast7Days: Record<string, number>;
 }

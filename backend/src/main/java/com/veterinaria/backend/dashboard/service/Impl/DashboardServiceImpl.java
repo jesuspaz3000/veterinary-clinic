@@ -80,7 +80,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .revenueThisMonth(revenueThisMonth)
                 .appointmentsLast7Days(buildAppointmentsLast7Days(today))
                 .revenueLast7Days(buildRevenueLast7Days(today, zone))
-                .appointmentsByStatusToday(buildAppointmentsByStatus(today))
+                .appointmentsByStatusLast7Days(buildAppointmentsByStatusLast7Days(today))
                 .build();
     }
 
@@ -132,8 +132,9 @@ public class DashboardServiceImpl implements DashboardService {
         return result;
     }
 
-    private Map<String, Long> buildAppointmentsByStatus(LocalDate today) {
-        return appointmentRepository.findByDateBetweenOrderByDateAsc(today, today).stream()
+    private Map<String, Long> buildAppointmentsByStatusLast7Days(LocalDate today) {
+        LocalDate start = today.minusDays(6);
+        return appointmentRepository.findByDateBetweenOrderByDateAsc(start, today).stream()
                 .collect(Collectors.groupingBy(Appointment::getStatus, Collectors.counting()));
     }
 }

@@ -27,5 +27,5 @@ public class DashboardStatsDTO {
     private BigDecimal revenueThisMonth;
     private List<DashboardChartPointDTO> appointmentsLast7Days;
     private List<DashboardChartPointDTO> revenueLast7Days;
-    private Map<String, Long> appointmentsByStatusToday;
+    private Map<String, Long> appointmentsByStatusLast7Days;
 }

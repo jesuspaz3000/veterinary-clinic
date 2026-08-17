@@ -64,7 +64,7 @@ export default function Dashboard() {
         };
     }, []);
 
-    const appointmentsByStatus = Object.entries(stats?.appointmentsByStatusToday ?? {}).map(([status, count]) => ({
+    const appointmentsByStatus = Object.entries(stats?.appointmentsByStatusLast7Days ?? {}).map(([status, count]) => ({
         id: status,
         label: STATUS_LABELS[status] || status,
         value: count,
@@ -215,14 +215,14 @@ export default function Dashboard() {
 
                 <Paper variant="outlined" sx={{ p: 2.5, borderRadius: "16px" }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                        Citas de hoy por estado
+                        Citas de los últimos 7 días por estado
                     </Typography>
                     {loading ? (
                         <Skeleton variant="rounded" height={260} />
                     ) : appointmentsByStatus.length === 0 ? (
                         <Box sx={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <Typography variant="body2" color="text.secondary">
-                                No hay citas registradas hoy.
+                                No hay citas registradas en los últimos 7 días.
                             </Typography>
                         </Box>
                     ) : (
