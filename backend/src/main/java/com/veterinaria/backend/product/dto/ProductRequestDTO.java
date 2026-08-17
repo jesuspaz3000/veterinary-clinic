@@ -20,4 +20,5 @@ public class ProductRequestDTO {
     private String targetSpecies;
     private Boolean requiresPrescription;
     private Boolean isLowStock;
+    private String status;
 }

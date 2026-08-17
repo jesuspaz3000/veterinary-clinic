@@ -87,4 +87,8 @@ export const ProductsService = {
   deleteProduct: async (id: string): Promise<void> => {
     await ApiService.delete(`/products/${id}`);
   },
+
+  reactivateProduct: async (id: string): Promise<void> => {
+    await ApiService.post(`/products/${id}/reactivate`);
+  },
 };

@@ -17,4 +17,5 @@ public interface ProductService {
     ProductDTO updateProduct(UUID id, UpdateProductDTO dto, User currentUser);
     ProductDTO updateProduct(UUID id, UpdateProductDTO dto);
     void deleteProduct(UUID id);
+    void reactivateProduct(UUID id);
 }

@@ -102,6 +102,12 @@ export interface ProductResponse {
   updatedAt: string | null;
 }
 
+export const PRODUCT_STATUS_FILTERS = [
+  { value: "activo", label: "Activos" },
+  { value: "inactivo", label: "Inactivos" },
+  { value: "todos", label: "Todos" },
+] as const;
+
 export interface ProductFilterRequest {
   limit?: number;
   offset?: number;
@@ -111,6 +117,7 @@ export interface ProductFilterRequest {
   targetSpecies?: string;
   requiresPrescription?: boolean;
   isLowStock?: boolean;
+  status?: string;
 }
 
 export interface CreateProductRequest {

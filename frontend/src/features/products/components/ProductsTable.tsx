@@ -18,6 +18,7 @@ import {
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import RestoreRoundedIcon from "@mui/icons-material/RestoreRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -28,10 +29,11 @@ import CustomTable, { Column } from "@/shared/components/CustomTable";
 import ImagePreviewDialog from "@/shared/components/ImagePreviewDialog";
 import { useProducts } from "../hooks/useProducts";
 import { useCategories } from "../hooks/useCategories";
-import { ProductResponse } from "../types/productTypes";
+import { PRODUCT_STATUS_FILTERS, ProductResponse } from "../types/productTypes";
 import CreateProductDialog from "./CreateProductDialog";
 import EditProductDialog from "./EditProductDialog";
 import DeleteProductDialog from "./DeleteProductDialog";
+import ReactivateProductDialog from "./ReactivateProductDialog";
 import ManageCategoriesDialog from "./ManageCategoriesDialog";
 
 export default function ProductsTable() {
@@ -43,11 +45,13 @@ export default function ProductsTable() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLowStockOnly, setIsLowStockOnly] = useState(false);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string>("activo");
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductResponse | null>(null);
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
 
@@ -62,11 +66,12 @@ export default function ProductsTable() {
         search: search.trim() || undefined,
         categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
         isLowStock: isLowStockOnly || undefined,
+        status: activeStatusFilter,
       });
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [page, rowsPerPage, search, selectedCategory, isLowStockOnly, fetchProducts]);
+  }, [page, rowsPerPage, search, selectedCategory, isLowStockOnly, activeStatusFilter, fetchProducts]);
 
   const handlePageChange = (_event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage);
@@ -89,6 +94,7 @@ export default function ProductsTable() {
       search: search.trim() || undefined,
       categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
       isLowStock: isLowStockOnly || undefined,
+      status: activeStatusFilter,
     });
   };
 
@@ -133,9 +139,19 @@ export default function ProductsTable() {
           </Tooltip>
 
           <Box sx={{ display: "flex", flexDirection: "column" }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
-              {row.name}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: "primary.main" }}>
+                {row.name}
+              </Typography>
+              {!row.isActive && (
+                <Chip
+                  label="Inactivo"
+                  size="small"
+                  color="default"
+                  sx={{ height: 18, fontSize: "0.6rem", fontWeight: 700 }}
+                />
+              )}
+            </Box>
             {row.activeIngredient && (
               <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
                 P. Activo: {row.activeIngredient}
@@ -261,32 +277,50 @@ export default function ProductsTable() {
       align: "center",
       render: (row) => (
         <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-          <Tooltip title="Editar Producto">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedProduct(row);
-                setEditOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <EditRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Eliminar Producto">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedProduct(row);
-                setDeleteOpen(true);
-              }}
-              sx={{ bgcolor: "action.hover" }}
-            >
-              <DeleteRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {row.isActive ? (
+            <>
+              <Tooltip title="Editar Producto">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => {
+                    setSelectedProduct(row);
+                    setEditOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <EditRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Desactivar Producto">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => {
+                    setSelectedProduct(row);
+                    setDeleteOpen(true);
+                  }}
+                  sx={{ bgcolor: "action.hover" }}
+                >
+                  <DeleteRoundedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : (
+            <Tooltip title="Reactivar Producto">
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => {
+                  setSelectedProduct(row);
+                  setReactivateOpen(true);
+                }}
+                sx={{ bgcolor: "action.hover" }}
+              >
+                <RestoreRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       ),
     },
@@ -369,6 +403,24 @@ export default function ProductsTable() {
             ))}
           </TextField>
 
+          <TextField
+            select
+            label="Activo/Inactivo"
+            value={activeStatusFilter}
+            onChange={(e) => {
+              setActiveStatusFilter(e.target.value);
+              setPage(0);
+            }}
+            size="small"
+            sx={{ width: { xs: "100%", sm: 200 } }}
+          >
+            {PRODUCT_STATUS_FILTERS.map((f) => (
+              <MenuItem key={f.value} value={f.value}>
+                {f.label}
+              </MenuItem>
+            ))}
+          </TextField>
+
           <FormControlLabel
             control={
               <Switch
@@ -442,6 +494,18 @@ export default function ProductsTable() {
           product={selectedProduct}
           onClose={() => {
             setDeleteOpen(false);
+            setSelectedProduct(null);
+          }}
+          onSuccess={refreshData}
+        />
+      )}
+
+      {reactivateOpen && selectedProduct && (
+        <ReactivateProductDialog
+          open={reactivateOpen}
+          product={selectedProduct}
+          onClose={() => {
+            setReactivateOpen(false);
             setSelectedProduct(null);
           }}
           onSuccess={refreshData}

@@ -43,6 +43,7 @@ public class ProductController {
             @RequestParam(required = false) String targetSpecies,
             @RequestParam(required = false) Boolean requiresPrescription,
             @RequestParam(required = false) Boolean isLowStock,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset
     ) {
@@ -53,6 +54,7 @@ public class ProductController {
                 .targetSpecies(targetSpecies)
                 .requiresPrescription(requiresPrescription)
                 .isLowStock(isLowStock)
+                .status(status)
                 .limit(limit)
                 .offset(offset)
                 .build();
@@ -85,10 +87,18 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('PRODUCTS_DELETE') or hasAuthority('USERS_DELETE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    @Operation(summary = "Delete product", description = "Delete product and its variants")
+    @Operation(summary = "Delete product", description = "Deactivate product and its variants")
     public ResponseEntity<MessageResponse> deleteProduct(@PathVariable UUID id) {
         productService.deleteProduct(id);
-        return ResponseEntity.ok(new MessageResponse("Producto eliminado exitosamente"));
+        return ResponseEntity.ok(new MessageResponse("Producto desactivado exitosamente"));
+    }
+
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize("hasAuthority('PRODUCTS_UPDATE') or hasAuthority('USERS_UPDATE') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @Operation(summary = "Reactivate product", description = "Reactivate a previously deactivated product and its variants")
+    public ResponseEntity<MessageResponse> reactivateProduct(@PathVariable UUID id) {
+        productService.reactivateProduct(id);
+        return ResponseEntity.ok(new MessageResponse("Producto reactivado exitosamente"));
     }
 
     private User getAuthenticatedUser(Authentication authentication) {

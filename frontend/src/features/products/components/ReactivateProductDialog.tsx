@@ -16,47 +16,45 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { ProductsService } from "../service/products.service";
 import { ProductResponse } from "../types/productTypes";
 
-interface DeleteProductDialogProps {
+interface ReactivateProductDialogProps {
   open: boolean;
   product: ProductResponse;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function DeleteProductDialog({
+export default function ReactivateProductDialog({
   open,
   product,
   onClose,
   onSuccess,
-}: DeleteProductDialogProps) {
-  const [deleting, setDeleting] = useState(false);
+}: ReactivateProductDialogProps) {
+  const [reactivating, setReactivating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleDelete = async () => {
-    setDeleting(true);
+  const handleReactivate = async () => {
+    setReactivating(true);
     setErrorMessage(null);
     try {
-      await ProductsService.deleteProduct(product.id);
+      await ProductsService.reactivateProduct(product.id);
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      console.error("Error deleting product:", error);
+      console.error("Error reactivating product:", error);
       const err = error as { response?: { data?: { message?: string } }; message?: string };
-      setErrorMessage(
-        err.response?.data?.message || err.message || "Error al desactivar el producto e inventario."
-      );
+      setErrorMessage(err.response?.data?.message || err.message || "Error al reactivar el producto.");
     } finally {
-      setDeleting(false);
+      setReactivating(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={deleting ? undefined : onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Desactivar Producto</DialogTitle>
+    <Dialog open={open} onClose={reactivating ? undefined : onClose} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700 }}>Reactivar Producto</DialogTitle>
       <IconButton
         aria-label="Cerrar"
         onClick={onClose}
-        disabled={deleting}
+        disabled={reactivating}
         sx={{
           position: "absolute",
           right: 12,
@@ -70,26 +68,23 @@ export default function DeleteProductDialog({
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
         <Typography variant="body1">
-          ¿Estás seguro de que deseas desactivar el producto <strong>{product.name}</strong>?
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          El producto y todas sus presentaciones/variantes dejarán de estar disponibles para nuevas ventas,
-          vacunaciones o desparasitaciones, sin borrar su historial ni movimientos de inventario.
+          ¿Deseas reactivar el producto <strong>{product.name}</strong>? Volverá a aparecer en el listado de
+          productos activos junto con todas sus presentaciones/variantes.
         </Typography>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={deleting} variant="outlined" sx={{ borderRadius: "8px", textTransform: "none" }}>
+        <Button onClick={onClose} disabled={reactivating} variant="outlined" sx={{ borderRadius: "8px", textTransform: "none" }}>
           Cancelar
         </Button>
         <Button
-          onClick={() => void handleDelete()}
-          disabled={deleting}
+          onClick={() => void handleReactivate()}
+          disabled={reactivating}
           variant="contained"
-          color="error"
+          color="success"
           sx={{ borderRadius: "8px", textTransform: "none", minWidth: 110 }}
         >
-          {deleting ? <CircularProgress size={20} color="inherit" /> : "Desactivar"}
+          {reactivating ? <CircularProgress size={20} color="inherit" /> : "Reactivar"}
         </Button>
       </DialogActions>
     </Dialog>

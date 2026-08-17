@@ -86,6 +86,16 @@ public class ProductServiceImpl implements ProductService {
                 query.distinct(true);
             }
 
+            String status = request.getStatus();
+            if (status == null || status.isBlank()) {
+                // Por defecto solo se listan productos activos
+                predicates.add(cb.isTrue(root.get("isActive")));
+            } else if (!"todos".equalsIgnoreCase(status.trim())) {
+                boolean activeValue = "activo".equalsIgnoreCase(status.trim());
+                predicates.add(cb.equal(root.get("isActive"), activeValue));
+            }
+            // status == "todos": sin filtro de estado, se listan todos
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
@@ -127,6 +137,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public ProductDTO getProductById(UUID id) {
         Product product = productRepository.findById(id)
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado con id: " + id));
         return productMapper.toDTO(product);
     }
@@ -191,6 +202,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductDTO updateProduct(UUID id, UpdateProductDTO dto, User currentUser) {
         Product product = productRepository.findById(id)
+                .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado con id: " + id));
 
         Category category = categoryRepository.findById(dto.getCategoryId())
@@ -242,10 +254,29 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProduct(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado con id: " + id));
-        if (product.getImageUrl() != null) {
-            storageService.delete(product.getImageUrl());
+
+        product.setIsActive(false);
+        if (product.getVariants() != null) {
+            for (ProductVariant variant : product.getVariants()) {
+                variant.setIsActive(false);
+            }
         }
-        productRepository.delete(product);
+        productRepository.saveAndFlush(product);
+    }
+
+    @Override
+    @Transactional
+    public void reactivateProduct(UUID id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado con id: " + id));
+
+        product.setIsActive(true);
+        if (product.getVariants() != null) {
+            for (ProductVariant variant : product.getVariants()) {
+                variant.setIsActive(true);
+            }
+        }
+        productRepository.saveAndFlush(product);
     }
 
     private User resolveUser(User currentUser) {
