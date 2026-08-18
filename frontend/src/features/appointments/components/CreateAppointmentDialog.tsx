@@ -84,6 +84,11 @@ export default function CreateAppointmentDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [professionalSchedule, setProfessionalSchedule] = useState<ScheduleResponse | null>(null);
   const [scheduleFetchFailed, setScheduleFetchFailed] = useState(false);
+  // Clave (profesional + fecha) para la que `professionalSchedule` es válido. Se compara
+  // contra la combinación actual en cada render (no dentro de un efecto) para que
+  // "cargando" quede activo desde el mismo instante en que cambia la fecha/profesional,
+  // sin dejar un frame intermedio donde parezca "sin horario" antes de tiempo.
+  const [loadedScheduleKey, setLoadedScheduleKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -107,29 +112,41 @@ export default function CreateAppointmentDialog({
     void loadOptions();
   }, [open]);
 
+  const professionalId = selectedVet?.id ?? selectedGroomer?.id ?? null;
+  const professionalKind = selectedVet ? "veterinarian" : selectedGroomer ? "grooming" : null;
+  const hasDateSelected = date !== null && date.isValid();
+  const scheduleKey =
+    professionalId && hasDateSelected ? `${professionalId}-${date!.format("YYYY-MM-DD")}` : null;
+  // true mientras `professionalSchedule` todavía corresponde a un profesional/fecha
+  // distinto del actual (se recalcula en cada render, no depende de que el efecto
+  // de abajo ya haya corrido, así no queda ningún frame "en falso").
+  const scheduleLoading = scheduleKey !== null && scheduleKey !== loadedScheduleKey;
+
   // Carga el horario semanal del profesional seleccionado para acotar las horas de la cita
   useEffect(() => {
-    const professionalId = selectedVet?.id ?? selectedGroomer?.id ?? null;
-    const kind = selectedVet ? "veterinarian" : selectedGroomer ? "grooming" : null;
     let cancelled = false;
     const loadSchedule = async () => {
-      if (!professionalId || !kind || !date || !date.isValid()) {
+      if (!professionalId || !professionalKind || !date || !date.isValid()) {
         setProfessionalSchedule(null);
         setScheduleFetchFailed(false);
+        setLoadedScheduleKey(null);
         return;
       }
+      const key = `${professionalId}-${date.format("YYYY-MM-DD")}`;
       try {
-        const schedules = await SchedulesService.getSchedules(kind, professionalId);
+        const schedules = await SchedulesService.getSchedules(professionalKind, professionalId);
         if (!cancelled) {
           // dayjs: 0=Domingo..6=Sábado, misma convención del backend
           setProfessionalSchedule(schedules.find((s) => s.dayOfWeek === date.day()) ?? null);
           setScheduleFetchFailed(false);
+          setLoadedScheduleKey(key);
         }
       } catch (err) {
         console.error("Error loading professional schedule:", err);
         if (!cancelled) {
           setProfessionalSchedule(null);
           setScheduleFetchFailed(true);
+          setLoadedScheduleKey(key);
         }
       }
     };
@@ -137,17 +154,22 @@ export default function CreateAppointmentDialog({
     return () => {
       cancelled = true;
     };
-  }, [selectedVet, selectedGroomer, date]);
+  }, [professionalId, professionalKind, date]);
 
   const hasProfessional = selectedVet !== null || selectedGroomer !== null;
-  const scheduleMin = professionalSchedule ? parseTime(professionalSchedule.startTime) : DAY_MIN;
-  const scheduleMax = professionalSchedule ? parseTime(professionalSchedule.endTime) : DAY_MAX;
-  // Solo tiene sentido evaluar la disponibilidad cuando ya se eligió una fecha
-  const hasDateSelected = date !== null && date.isValid();
+  // Mientras el horario del día actual todavía se está cargando (scheduleLoading),
+  // `professionalSchedule` puede seguir correspondiendo al día anterior: no se debe
+  // usar para acotar los TimePicker en ese ínterin, o marcarían en rojo una hora ya
+  // válida (elegida para el nuevo día) por no encajar en el horario del día viejo.
+  const scheduleMin =
+    professionalSchedule && !scheduleLoading ? parseTime(professionalSchedule.startTime) : DAY_MIN;
+  const scheduleMax =
+    professionalSchedule && !scheduleLoading ? parseTime(professionalSchedule.endTime) : DAY_MAX;
   const scheduleBlocksDay =
     hasDateSelected &&
     hasProfessional &&
     !scheduleFetchFailed &&
+    !scheduleLoading &&
     (professionalSchedule === null || !professionalSchedule.isAvailable);
 
   const handleSubmit = async (event: React.FormEvent) => {

@@ -145,20 +145,30 @@ export default function AppointmentSlotPicker({
         );
         return;
       }
-      rangeStart = scheduleStart;
-      rangeEnd = scheduleEnd;
-
       const dateStr = day.format("YYYY-MM-DD");
-      const busy = professionalEvents.some(
-        (a) =>
-          a.status !== "cancelada" &&
-          a.date === dateStr &&
-          rangeStart < toMinutes(a.endTime) &&
-          rangeEnd > toMinutes(a.startTime)
-      );
-      if (busy) {
+      const overlapsExisting = (start: number, end: number) =>
+        professionalEvents.some(
+          (a) =>
+            a.status !== "cancelada" &&
+            a.date === dateStr &&
+            start < toMinutes(a.endTime) &&
+            end > toMinutes(a.startTime)
+        );
+
+      // Por comodidad, se intenta preseleccionar el bloque disponible
+      // completo (el usuario puede acortarlo con los campos de "ajuste
+      // fino"). Pero si ese bloque completo choca con OTRA cita en otro
+      // horario del mismo día, no se debe rechazar el clic entero: se usa
+      // solo la franja puntual que el usuario clickeó, si esa sí está libre.
+      if (!overlapsExisting(scheduleStart, scheduleEnd)) {
+        rangeStart = scheduleStart;
+        rangeEnd = scheduleEnd;
+      } else if (!overlapsExisting(slotStart, slotStart + SLOT_DURATION)) {
+        rangeStart = slotStart;
+        rangeEnd = slotStart + SLOT_DURATION;
+      } else {
         setHint(
-          "El profesional ya tiene una cita dentro de ese horario. Ajusta el rango con los campos de hora si aún queda una franja libre."
+          "El profesional ya tiene una cita en esa franja. Elige otra hora libre o ajusta el rango con los campos de hora."
         );
         return;
       }
@@ -202,8 +212,11 @@ export default function AppointmentSlotPicker({
           return (
             <Box
               sx={(theme) => {
+                // Se usa el color de acento del tema (no "success"/verde) para que
+                // el fondo de "horario disponible" no se confunda visualmente con
+                // el color de citas en estado "completada", que también es verde.
                 const color = schedule.isAvailable
-                  ? theme.palette.success.main
+                  ? theme.palette.primary.main
                   : theme.palette.grey[500];
                 return {
                   position: "absolute",
@@ -255,15 +268,15 @@ export default function AppointmentSlotPicker({
           const cancelled = a.status === "cancelada";
           return (
             <Box
-              sx={{
+              sx={(theme) => ({
                 height: "100%",
                 borderLeft: `4px solid ${color}`,
-                bgcolor: `${color}22`,
+                background: `linear-gradient(${color}33, ${color}33), ${theme.palette.background.paper}`,
                 px: 0.5,
                 py: 0.25,
                 overflow: "hidden",
                 opacity: cancelled ? 0.55 : 1,
-              }}
+              })}
             >
               <Typography
                 variant="caption"
@@ -276,8 +289,22 @@ export default function AppointmentSlotPicker({
                   textOverflow: "ellipsis",
                 }}
               >
-                {a.startTime.slice(0, 5)}–{a.endTime.slice(0, 5)} {a.pet?.name ?? ""}
+                {a.startTime.slice(0, 5)}–{a.endTime.slice(0, 5)}
               </Typography>
+              {a.pet?.name && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {a.pet.name}
+                </Typography>
+              )}
             </Box>
           );
         }}
