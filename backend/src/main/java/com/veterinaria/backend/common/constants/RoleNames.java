@@ -9,7 +9,7 @@ public final class RoleNames {
     public static final String GROOMING = "GROOMING";
     public static final String ADMINISTRATIVE = "ADMINISTRATIVE";
 
-    public static final Set<String> SYSTEM_ROLES = Set.of(SUPERADMIN, ADMIN, VETERINARIAN, GROOMING);
+    public static final Set<String> SYSTEM_ROLES = Set.of(SUPERADMIN, ADMIN, VETERINARIAN, GROOMING, ADMINISTRATIVE);
 
     private RoleNames() {
     }

@@ -161,7 +161,7 @@ export default function RolesTable() {
                 <IconButton
                   size="small"
                   color="error"
-                  disabled={["SUPERADMIN", "VETERINARIAN", "ADMIN", "GROOMING"].includes(row.name)}
+                  disabled={["SUPERADMIN", "VETERINARIAN", "ADMIN", "GROOMING", "ADMINISTRATIVE"].includes(row.name)}
                   onClick={() => {
                     setSelectedRole(row);
                     setDeleteOpen(true);
